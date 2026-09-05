@@ -6,9 +6,7 @@
   <meta name="theme-color" content="#05030a">
   <meta name="description" content="PRISM / Event Horizon — a real-time Schwarzschild observatory.">
   <title>PRISM / Event Horizon</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='14' fill='none' stroke='%23d9a66d' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%2305030a'/%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%23d9a66d' stroke-width='.6' opacity='.5'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -24,7 +22,7 @@
       overflow: hidden;
       background: var(--void);
       color: var(--ivory);
-      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-family: ui-monospace, "IBM Plex Mono", monospace;
       letter-spacing: 0.14em;
       cursor: crosshair;
       -webkit-user-select: none;
@@ -148,7 +146,7 @@
       border: 0;
       border-radius: 999px;
       padding: 10px 16px;
-      font: 500 10px/1 "IBM Plex Mono", ui-monospace, monospace;
+      font: 500 10px/1 ui-monospace, "IBM Plex Mono", monospace;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       backdrop-filter: blur(26px) saturate(190%) brightness(1.35);
@@ -223,8 +221,9 @@
         <b id="tau">00:00.<span>00</span></b>
         <div style="margin-top:14px">Radius <b id="rad" style="font-size:13px;margin-top:4px">16.2 Rs</b></div>
         <div style="margin-top:10px">Redshift z <b id="zed" style="font-size:13px;margin-top:4px">0.032</b></div>
-        <div style="margin-top:10px">Tier <b id="layer" style="font-size:12px;margin-top:4px;max-width:22em;line-height:1.35;letter-spacing:0.08em">Laniakea Filament Web</b></div>
-        <div style="margin-top:10px">Scale <b id="scale" style="font-size:13px;margin-top:4px">10²⁶ m</b></div>
+        <div style="margin-top:10px">Domain <b id="layer" style="font-size:12px;margin-top:4px;max-width:22em;line-height:1.35;letter-spacing:0.08em">3D Chladni Nodal Surfaces</b></div>
+        <div style="margin-top:10px">Mode (m,n,l) <b id="modes" style="font-size:13px;margin-top:4px">2 · 3 · 1</b></div>
+        <div style="margin-top:10px">Pressure <b id="pascals" style="font-size:13px;margin-top:4px">0 Pa</b></div>
       </div>
     </div>
     <div class="bottom">
@@ -236,39 +235,39 @@
           <span>Worlds<b id="pr">—</b></span>
           <span>Steps<b id="st">—</b></span>
           <span>Pulse<b id="pu">0.00</b></span>
+          <span>RMS<b id="rms">0.00</b></span>
+          <span>Flux<b id="flux">0.00</b></span>
         </div>
       </div>
       <div class="audio-wrap">
         <button class="audio" id="au" type="button">[ Audio // Initialize ]</button>
         <div id="wave"></div>
+        <div id="bands" style="display:flex;gap:3px;margin-top:4px;height:18px;align-items:flex-end">
+          <i data-b="SubBass" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
+          <i data-b="Bass" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
+          <i data-b="LowMid" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
+          <i data-b="Mid" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
+          <i data-b="HighMid" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
+          <i data-b="Air" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
+        </div>
+        <button class="audio" id="mic" type="button" style="margin-top:6px">[ Mic // Off ]</button>
       </div>
     </div>
   </div>
   <div id="fail"></div>
   <script id="prism-core">
   var PRISM = (function () {
-    var TIERS = [
-      { id: 1, name: "Laniakea Filament Web", exp: 26, band: "cosmic" },
-      { id: 2, name: "Galaxy Cluster & Dark Matter Halo", exp: 24, band: "cosmic" },
-      { id: 3, name: "Spiral Galaxy Core & Stellar Arms", exp: 21, band: "cosmic" },
-      { id: 4, name: "Nebular Stellar Nursery", exp: 18, band: "cosmic" },
-      { id: 5, name: "Star System & Oort Cloud", exp: 15, band: "cosmic" },
-      { id: 6, name: "Gas Giant with Ring System & Aurora", exp: 12, band: "cosmic" },
-      { id: 7, name: "Terrestrial Biosphere Planet", exp: 7, band: "planetary" },
-      { id: 8, name: "Megacity / Geodesic Architectural Sprawl", exp: 5, band: "planetary" },
-      { id: 9, name: "Crystalline Monolith / Surface Micro-geometry", exp: 2, band: "planetary" },
-      { id: 10, name: "Organic Cellular Membrane & Cytoplasm", exp: -4, band: "crystalline" },
-      { id: 11, name: "DNA Double Helix & Ribosome Motors", exp: -8, band: "crystalline" },
-      { id: 12, name: "Molecular Lattice & Electron Density Clouds", exp: -10, band: "crystalline" },
-      { id: 13, name: "Atomic Shell & Probability Orbitals (s, p, d, f)", exp: -11, band: "crystalline" },
-      { id: 14, name: "Nucleon Core (Protons / Neutrons)", exp: -15, band: "nuclear" },
-      { id: 15, name: "Quark-Gluon Plasma & Color Charge Flux", exp: -18, band: "nuclear" },
-      { id: 16, name: "Electroweak Symmetry Breaking Lattice", exp: -22, band: "nuclear" },
-      { id: 17, name: "Grand Unified Theory String Vibrations", exp: -30, band: "planck" },
-      { id: 18, name: "Quantum Foam / Spacetime Topology Fluctuations", exp: -35, band: "planck" },
-      { id: 19, name: "Event Horizon Throat & Wormhole Bridge", exp: 3, band: "horizon" },
-      { id: 20, name: "Genesis Bang / New Multiverse Rebirth", exp: -36, band: "bang" }
+    var DOMAINS = [
+      { id: 1, name: "3D Chladni Nodal Surfaces", m: 2, n: 3, l: 1, ratios: [1, 1.5, 2] },
+      { id: 2, name: "Acoustic Levitation Manifold", m: 3, n: 2, l: 1, ratios: [1, 1.25, 2.5] },
+      { id: 3, name: "Fluid Faraday Wave Turbulence", m: 4, n: 2, l: 0, ratios: [1, 1.333, 2] },
+      { id: 4, name: "Sonoluminescence Plasma Core", m: 1, n: 1, l: 0, ratios: [1, 2.01, 3.01] },
+      { id: 5, name: "Quantum Acoustic Phonon Lattice", m: 5, n: 4, l: 2, ratios: [1, 1.414, 1.732] },
+      { id: 6, name: "Non-Euclidean 4D Cymatic Hypersphere", m: 3, n: 3, l: 3, ratios: [1, 1.618, 2.618] },
+      { id: 7, name: "Gravitational Wave Quadrupole Ripple", m: 2, n: 2, l: 2, ratios: [1, 1.5, 2.5] },
+      { id: 8, name: "The Infinite Sonic Singularity", m: 0, n: 1, l: 0, ratios: [1, 1.01, 1.03] }
     ];
+    var N = 8;
     function wrapUnit(x, n) {
       var y = x % n;
       if (y < 0) y += n;
@@ -276,72 +275,155 @@
       return y;
     }
     function wrapDescent(d) {
-      return wrapUnit(d - 1, 20);
+      return wrapUnit(d - 1, N);
     }
     function mapDescent(d) {
       var x = wrapDescent(d);
       var i0 = Math.floor(x + 1e-15);
-      if (i0 >= 20) i0 = 0;
+      if (i0 >= N) i0 = 0;
       var blend = x - i0;
       if (blend < 0) blend = 0;
       if (blend > 1) blend = 1;
-      var i1 = (i0 + 1) % 20;
-      var a = TIERS[i0];
-      var b = TIERS[i1];
-      var meters = Math.pow(10, a.exp + (b.exp - a.exp) * blend);
+      var i1 = (i0 + 1) % N;
+      var a = DOMAINS[i0];
+      var b = DOMAINS[i1];
       return {
         unit: x,
         tierIndex: a.id,
+        domainIndex: a.id,
         nextIndex: b.id,
         blend: blend,
         name: a.name,
         nextName: b.name,
-        exp: a.exp + (b.exp - a.exp) * blend,
-        meters: meters,
-        band: blend > 0.5 ? b.band : a.band
+        m: a.m + (b.m - a.m) * blend,
+        n: a.n + (b.n - a.n) * blend,
+        l: a.l + (b.l - a.l) * blend,
+        modes: [a.m, a.n, a.l]
       };
     }
     function lerp(a, b, t) { return a + (b - a) * t; }
-    function audioForDescent(d) {
-      var m = mapDescent(d);
-      var t0 = m.tierIndex;
-      var t1 = m.nextIndex;
-      function curve(id) {
-        if (id <= 6) return { subHz: 28 + id * 1.4, droneHz: 55, fmHz: 140, fmGain: 0.004, droneGain: 0.22, noiseGain: 0.018, filterHz: 260, band: "cosmic" };
-        if (id <= 9) return { subHz: 40, droneHz: 72, fmHz: 210, fmGain: 0.012, droneGain: 0.14, noiseGain: 0.025, filterHz: 340, band: "planetary" };
-        if (id <= 13) return { subHz: 68, droneHz: 196, fmHz: 520, fmGain: 0.07, droneGain: 0.055, noiseGain: 0.03, filterHz: 920, band: "crystalline" };
-        if (id <= 16) return { subHz: 84, droneHz: 330, fmHz: 880, fmGain: 0.05, droneGain: 0.07, noiseGain: 0.045, filterHz: 1400, band: "nuclear" };
-        if (id <= 18) return { subHz: 48, droneHz: 110, fmHz: 2400, fmGain: 0.03, droneGain: 0.035, noiseGain: 0.14, filterHz: 2800, band: "planck" };
-        if (id === 19) return { subHz: 32, droneHz: 64, fmHz: 180, fmGain: 0.008, droneGain: 0.2, noiseGain: 0.04, filterHz: 220, band: "horizon" };
-        return { subHz: 22, droneHz: 90, fmHz: 1600, fmGain: 0.04, droneGain: 0.16, noiseGain: 0.11, filterHz: 1800, band: "bang" };
+    function hzOfBin(i, sampleRate, fftSize) {
+      return i * sampleRate / fftSize;
+    }
+    function analyzeAudio(freqBins, timeSamples, opts) {
+      opts = opts || {};
+      var sr = opts.sampleRate || 44100;
+      var fftSize = opts.fftSize || (freqBins.length * 2);
+      var prev = opts.prevSpectrum || null;
+      var named = {
+        SubBass: 0, Bass: 0, LowMid: 0, Mid: 0, HighMid: 0, Air: 0
+      };
+      var counts = {
+        SubBass: 0, Bass: 0, LowMid: 0, Mid: 0, HighMid: 0, Air: 0
+      };
+      var i, hz, mag, key;
+      for (i = 0; i < freqBins.length; i++) {
+        hz = hzOfBin(i, sr, fftSize);
+        mag = freqBins[i];
+        if (mag > 1.5) mag = mag / 255;
+        if (hz >= 20 && hz < 60) key = "SubBass";
+        else if (hz >= 60 && hz < 250) key = "Bass";
+        else if (hz >= 250 && hz < 500) key = "LowMid";
+        else if (hz >= 500 && hz < 2000) key = "Mid";
+        else if (hz >= 2000 && hz < 6000) key = "HighMid";
+        else if (hz >= 6000 && hz < 20000) key = "Air";
+        else continue;
+        named[key] += mag;
+        counts[key] += 1;
       }
-      var A = curve(t0);
-      var B = curve(t1);
-      var t = m.blend;
+      for (key in named) {
+        named[key] = counts[key] ? named[key] / counts[key] : 0;
+      }
+      var rms = 0, peak = 0;
+      if (timeSamples && timeSamples.length) {
+        for (i = 0; i < timeSamples.length; i++) {
+          var s = timeSamples[i];
+          if (s > 1.5) s = (s - 128) / 128;
+          rms += s * s;
+          var a = s < 0 ? -s : s;
+          if (a > peak) peak = a;
+        }
+        rms = Math.sqrt(rms / timeSamples.length);
+      }
+      var transient = Math.max(0, peak - rms * 1.5);
+      var flux = 0;
+      if (prev && prev.length === freqBins.length) {
+        for (i = 0; i < freqBins.length; i++) {
+          var a0 = freqBins[i], b0 = prev[i];
+          if (a0 > 1.5) a0 /= 255;
+          if (b0 > 1.5) b0 /= 255;
+          var df = a0 - b0;
+          if (df > 0) flux += df;
+        }
+        flux /= freqBins.length;
+      }
+      var bands64 = [];
+      var group = Math.max(1, Math.floor(freqBins.length / 64));
+      for (i = 0; i < 64; i++) {
+        var acc = 0, c = 0, j;
+        for (j = 0; j < group; j++) {
+          var idx = i * group + j;
+          if (idx >= freqBins.length) break;
+          mag = freqBins[idx];
+          if (mag > 1.5) mag /= 255;
+          acc += mag; c++;
+        }
+        bands64.push(c ? acc / c : 0);
+      }
+      var pascals = rms * 20;
       return {
-        subHz: lerp(A.subHz, B.subHz, t),
-        droneHz: lerp(A.droneHz, B.droneHz, t),
-        fmHz: lerp(A.fmHz, B.fmHz, t),
-        fmGain: lerp(A.fmGain, B.fmGain, t),
-        droneGain: lerp(A.droneGain, B.droneGain, t),
-        noiseGain: lerp(A.noiseGain, B.noiseGain, t),
-        filterHz: lerp(A.filterHz, B.filterHz, t),
-        band: t > 0.5 ? B.band : A.band,
-        tierIndex: m.tierIndex,
-        blend: m.blend
+        SubBass: named.SubBass,
+        Bass: named.Bass,
+        LowMid: named.LowMid,
+        Mid: named.Mid,
+        HighMid: named.HighMid,
+        Air: named.Air,
+        rms: rms,
+        peak: peak,
+        transient: transient,
+        flux: flux,
+        pascals: pascals,
+        bands64: bands64
       };
     }
+    function droneForDomain(d) {
+      var m = mapDescent(d);
+      var a = DOMAINS[m.domainIndex - 1];
+      var b = DOMAINS[m.nextIndex - 1];
+      var t = m.blend;
+      var fund = lerp(36 + a.id * 4, 36 + b.id * 4, t);
+      if (m.domainIndex >= 7) fund = lerp(28, 22, t);
+      var r0 = lerp(a.ratios[0], b.ratios[0], t);
+      var r1 = lerp(a.ratios[1], b.ratios[1], t);
+      var r2 = lerp(a.ratios[2], b.ratios[2], t);
+      var noise = m.domainIndex >= 8 ? lerp(0.04, 0.16, t) : (m.domainIndex >= 6 ? 0.05 : 0.02);
+      var drone = m.domainIndex <= 2 ? 0.2 : (m.domainIndex >= 8 ? 0.12 : 0.1);
+      return {
+        subHz: fund * r0,
+        droneHz: fund * r1,
+        fmHz: fund * r2 * 4,
+        fmGain: m.domainIndex >= 5 && m.domainIndex <= 6 ? 0.05 : 0.012,
+        droneGain: drone,
+        noiseGain: noise,
+        filterHz: 180 + m.domainIndex * 160 + t * 80,
+        beatHz: Math.abs(fund * (r1 - r0)),
+        ratios: [r0, r1, r2],
+        domainIndex: m.domainIndex,
+        blend: t
+      };
+    }
+    function audioForDescent(d) { return droneForDomain(d); }
     function distForZoom(d) {
       var x = wrapDescent(d);
-      if (x >= 18.6) return 2.5;
-      if (x < 6) return 28 + 48 * (1 - x / 6);
-      if (x < 10) return 8 + 20 * (1 - (x - 6) / 4);
-      return 2.6 + 7.4 * (1 - (x - 10) / 8.6);
+      return 3.2 + 22 * Math.pow(1 - x / 7.2, 1.25);
     }
     return {
-      TIERS: TIERS,
+      DOMAINS: DOMAINS,
+      TIERS: DOMAINS,
       wrapDescent: wrapDescent,
       mapDescent: mapDescent,
+      analyzeAudio: analyzeAudio,
+      droneForDomain: droneForDomain,
       audioForDescent: audioForDescent,
       distForZoom: distForZoom
     };
@@ -430,6 +512,8 @@
     uniform vec2 uRes;
     uniform vec3 uCamPos, uCamFwd, uCamRight, uCamUp;
     uniform float uTime, uFov, uExposure, uPulse, uPulseAmp, uSteps, uCamDist, uFall, uDescent;
+    uniform float uSubBass, uBass, uLowMid, uMid, uHighMid, uAir, uRMS, uTransient, uFlux;
+    uniform vec3 uModes;
 
     vec3 hsv2rgb(vec3 c){
       vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
@@ -520,176 +604,150 @@
       float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
       return mix(b, a, h) - k * h * (1.0 - h);
     }
-    float gyroid(vec3 p){ return abs(dot(sin(p), cos(p.zxy))) - 0.4; }
-    float Ylm2(vec3 n){
-      float Y00 = 0.282;
-      float Y10 = 0.488 * n.y;
-      float Y11 = 0.488 * n.x;
-      float Y1m = 0.488 * n.z;
-      float Y20 = 0.315 * (3.0 * n.y * n.y - 1.0);
-      float Y21 = 1.092 * n.x * n.y;
-      float Y22 = 0.546 * (n.x * n.x - n.z * n.z);
-      float Y2m = 1.092 * n.z * n.y;
-      return Y00*Y00 + Y10*Y10 + 0.65*Y11*Y11 + 0.55*Y1m*Y1m + 0.8*Y20*Y20 + 0.45*Y21*Y21 + 0.5*Y22*Y22 + 0.4*Y2m*Y2m;
-    }
-    float deLaniakea(vec3 p){
-      float d = 1e3;
-      for (int i = 0; i < 5; i++){
-        vec3 n = normalize(vec3(hash13(vec3(float(i), 1.2, 3.3)) - 0.5, hash13(vec3(float(i), 4.1, 0.2)) - 0.5, hash13(vec3(float(i), 7.7, 2.0)) - 0.5));
-        d = min(d, length(cross(p, n)) - (0.35 + 0.2 * fbm(p * 0.08)));
+    float j0(float x){
+      x = abs(x);
+      if (x < 8.0){
+        float y = x * x;
+        return 1.0 - y * 0.25 + y * y * 0.015625 - y * y * y * 0.000434;
       }
-      return d;
+      return sqrt(0.63662 / x) * cos(x - 0.7854);
     }
-    float deCluster(vec3 p){
-      float d = 1e3;
-      for (int i = 0; i < 6; i++){
-        vec3 c = (vec3(hash13(vec3(float(i), 0.1, 2.2)), hash13(vec3(float(i), 3.3, 4.4)), hash13(vec3(float(i), 5.5, 6.6))) - 0.5) * 18.0;
-        d = min(d, sdSphere(p - c, 1.1 + hash13(vec3(float(i), 9.0, 1.0))));
+    float j1(float x){
+      float ax = abs(x);
+      float s = x < 0.0 ? -1.0 : 1.0;
+      if (ax < 8.0){
+        float y = ax * ax;
+        return s * ax * (0.5 - y * 0.0625 + y * y * 0.002604);
       }
-      return min(d, sdSphere(p, 9.5));
+      return s * sqrt(0.63662 / ax) * cos(ax - 2.3562);
     }
-    float deSpiral(vec3 p){
-      float r = length(p.xz);
-      float a = atan(p.z, p.x);
-      float arm = abs(mod(a + r * 0.35, 2.094) - 1.047) * r;
-      return min(sdTorus(p, vec2(8.0, 1.6)), length(vec2(arm, p.y)) - 0.55);
-    }
-    float deNebula(vec3 p){ return 0.22 - 0.35 * fbm(p * 0.22); }
-    float deOort(vec3 p){
-      float sun = sdSphere(p, 1.15);
-      float cloud = abs(length(p) - 9.0) - 0.35;
-      return min(sun, cloud);
-    }
-    float deGiant(vec3 p){
-      return min(sdSphere(p, 3.2), sdTorus(vec3(p.x, p.y * 3.4, p.z), vec2(4.6, 0.18)));
-    }
-    float deTerra(vec3 p){ return sdSphere(p, 2.8); }
-    float deCity(vec3 p){
-      vec3 q = p;
-      q.xz = mod(q.xz + 1.1, 2.2) - 1.1;
-      float h = 0.4 + 1.6 * hash13(floor(p.xzz * 0.45));
-      vec3 b = abs(q) - vec3(0.28, h, 0.28);
-      return length(max(b, 0.0)) + min(max(b.x, max(b.y, b.z)), 0.0) - 0.02;
-    }
-    float deCrystal(vec3 p){
-      vec3 q = abs(p);
-      return max(q.x + q.y + q.z - 3.2, length(p) - 3.6) - 0.08 * sin(p.x * 6.0);
-    }
-    float deCell(vec3 p){
-      float mem = abs(length(p) - 2.6) - 0.12;
-      float n = sdSphere(p - vec3(0.6, 0.2, 0.1), 0.55);
-      float g = sdSphere(p + vec3(0.7, -0.3, 0.2), 0.35);
-      return smin(mem, smin(n, g, 0.25), 0.2);
-    }
-    float deDNA(vec3 p){
-      float a = p.y * 3.4;
-      vec3 h1 = vec3(cos(a), 0.0, sin(a)) * 0.85;
-      vec3 h2 = vec3(cos(a + 3.1416), 0.0, sin(a + 3.1416)) * 0.85;
-      vec3 q = vec3(p.x, mod(p.y + 8.0, 16.0) - 8.0, p.z);
-      float d = min(sdCapsule(q, h1, h1 + vec3(0.0, 0.4, 0.0), 0.12), sdCapsule(q, h2, h2 + vec3(0.0, 0.4, 0.0), 0.12));
-      d = min(d, sdCapsule(q, h1, h2, 0.05));
-      return d;
-    }
-    float deMolecule(vec3 p){
-      float d = 1e3;
-      for (int i = 0; i < 6; i++){
-        vec3 c = normalize(vec3(hash13(vec3(float(i), 1.0, 2.0)) - 0.5, hash13(vec3(float(i), 3.0, 4.0)) - 0.5, hash13(vec3(float(i), 5.0, 0.2)) - 0.2)) * 1.6;
-        d = min(d, sdSphere(p - c, 0.38));
-        if (i > 0){
-          vec3 c0 = normalize(vec3(hash13(vec3(0.0, 1.0, 2.0)) - 0.5, hash13(vec3(0.0, 3.0, 4.0)) - 0.5, 0.4)) * 1.6;
-          d = min(d, sdCapsule(p, c0, c, 0.07));
-        }
+    float jn(int n, float x){
+      if (n == 0) return j0(x);
+      if (n == 1) return j1(x);
+      if (abs(x) < 1e-4) return 0.0;
+      float jm2 = j0(x), jm1 = j1(x), j = jm1;
+      for (int k = 1; k < 6; k++){
+        if (k >= n) break;
+        j = float(2 * k) / x * jm1 - jm2;
+        jm2 = jm1; jm1 = j;
       }
-      return d;
+      return j;
     }
-    float deOrbitals(vec3 p){
+    float legendP(int n, float x){
+      if (n <= 0) return 1.0;
+      if (n == 1) return x;
+      if (n == 2) return 0.5 * (3.0 * x * x - 1.0);
+      if (n == 3) return 0.5 * (5.0 * x * x * x - 3.0 * x);
+      return 0.125 * (35.0 * x * x * x * x - 30.0 * x * x + 3.0);
+    }
+    float assocP(int n, int m, float x){
+      float p = legendP(n, x);
+      if (m == 0) return p;
+      float s = sqrt(max(0.0, 1.0 - x * x));
+      if (m == 1 && n == 1) return -s;
+      if (m == 1 && n == 2) return -3.0 * x * s;
+      if (m == 2 && n == 2) return 3.0 * (1.0 - x * x);
+      return p * pow(s, float(m));
+    }
+    vec3 audioWarp(vec3 p){
+      float k = 0.12 + 0.35 * uBass + 0.2 * uMid;
+      p.x += k * sin(p.y * 1.7 + uTime * (2.0 + 4.0 * uLowMid)) * uSubBass;
+      p.z += k * cos(p.x * 1.3 + uTime * 1.6) * uHighMid;
+      p += normalize(p + vec3(0.001)) * uTransient * 0.8;
+      return p;
+    }
+    float deChladni(vec3 p){
+      p = audioWarp(p);
       float r = length(p);
       vec3 n = p / max(r, 1e-4);
-      float rad = r * r * exp(-r * 1.35);
-      float ang = Ylm2(n);
-      return 0.22 - rad * ang * 2.8;
+      float m = uModes.x, nn = uModes.y, l = uModes.z;
+      float R = jn(int(l + 0.5), (3.2 + 4.0 * uMid) * r * 0.55);
+      float T = assocP(int(nn + 0.5), int(min(m, 2.0) + 0.5), n.y);
+      float F = cos(m * atan(p.z, p.x));
+      float plate = cos(m * 3.1416 * p.x * 0.35) * cos(nn * 3.1416 * p.z * 0.35);
+      return abs(R * T * F + 0.35 * plate) - (0.045 + 0.08 * uRMS);
     }
-    float deNucleon(vec3 p){
-      return smin(sdSphere(p - vec3(0.55, 0.0, 0.0), 0.85), sdSphere(p + vec3(0.55, 0.05, 0.0), 0.85), 0.2);
+    float deLevitate(vec3 p){
+      p = audioWarp(p);
+      float kz = 2.2 + 3.5 * uHighMid;
+      float trap = sin(kz * p.x) * sin(kz * p.y) * sin(kz * p.z);
+      float node = abs(trap) - (0.08 + 0.1 * uBass);
+      float grain = sdSphere(p - vec3(0.0, 0.0, 0.0), 0.15);
+      return smin(node, grain, 0.2);
     }
-    float deQGP(vec3 p){ return 0.18 - 0.42 * fbm(p * 0.9 + uTime * 0.35); }
-    float deElectroweak(vec3 p){
-      vec3 q = abs(mod(p + 1.2, 2.4) - 1.2);
-      return min(min(max(q.y, q.z), max(q.x, q.z)), max(q.x, q.y)) - 0.045;
+    float deFaraday(vec3 p){
+      p = audioWarp(p);
+      float rho = length(p.xz);
+      float k = 2.4 + 3.0 * uLowMid;
+      float h = 0.35 * (1.0 + uSubBass) * j0(k * rho) * cos(uTime * (6.0 + 8.0 * uBass));
+      float sub = 0.2 * j1(k * rho * 0.7) * cos(uTime * 3.1);
+      return p.y - (h + sub);
     }
-    float deStrings(vec3 p){
-      float d = 1e3;
-      for (int i = 0; i < 4; i++){
-        float ph = uTime * (0.7 + 0.2 * float(i)) + float(i);
-        vec3 a = vec3(-4.0, 0.6 * sin(ph), float(i) - 1.5);
-        vec3 b = vec3(4.0, 0.6 * sin(ph + 1.2), float(i) - 1.5);
-        d = min(d, sdCapsule(p, a, b, 0.08 + 0.04 * sin(p.x * 3.0 + ph)));
-      }
-      return d;
+    float deSono(vec3 p){
+      p = audioWarp(p);
+      float R = 1.1 - 0.85 * clamp(uTransient * 3.0 + 0.5 + 0.3 * sin(uTime * 12.0), 0.0, 1.0);
+      return abs(length(p) - max(R, 0.08)) - 0.04;
     }
-    float deFoam(vec3 p){ return gyroid(p * 1.4 + uTime * 0.25) * 0.35; }
-    float deHorizon(vec3 p){ return abs(length(p) - 1.52) - 0.06; }
-    float deBang(vec3 p){ return abs(length(p) - (1.4 + 1.8 * fract(uTime * 0.15))) - 0.12; }
+    float dePhonon(vec3 p){
+      p = audioWarp(p);
+      vec3 q = mod(p + 1.15, 2.3) - 1.15;
+      float ac = sdSphere(q, 0.28 + 0.08 * sin(uTime * 4.0 + p.x));
+      float opt = sdSphere(q - vec3(0.55, 0.0, 0.0), 0.16);
+      float disp = 0.12 * sin(3.1416 * p.x) * sin(3.1416 * p.y) * (0.4 + uMid);
+      return smin(ac, opt, 0.15) + disp;
+    }
+    float deHypersphere(vec3 p){
+      p = audioWarp(p);
+      float w = sin(uTime * 0.7 + uAir * 6.0) * (1.2 + uRMS);
+      float r4 = sqrt(dot(p, p) + w * w);
+      float ang = atan(w, length(p));
+      float slice = legendP(int(uModes.y + 0.5), cos(ang)) * jn(int(uModes.z + 0.5), r4);
+      return abs(r4 - (2.4 + uBass)) - 0.08 + 0.05 * slice;
+    }
+    float deQuadrupole(vec3 p){
+      p = audioWarp(p);
+      float r = length(p);
+      float cth = p.y / max(r, 1e-4);
+      float P2 = legendP(2, cth);
+      float h = (0.15 + 0.55 * uSubBass) * P2 * sin(uTime * 2.2 + r * 0.4);
+      return sdTorus(p, vec2(2.8 + h * 2.0, 0.22 + 0.15 * uRMS));
+    }
+    float deSingularity(vec3 p){
+      p = audioWarp(p);
+      return abs(length(p) - 1.52) - (0.05 + 0.12 * uRMS);
+    }
     float deTier(int id, vec3 p){
-      if (id == 0) return deLaniakea(p);
-      if (id == 1) return deCluster(p);
-      if (id == 2) return deSpiral(p);
-      if (id == 3) return deNebula(p);
-      if (id == 4) return deOort(p);
-      if (id == 5) return deGiant(p);
-      if (id == 6) return deTerra(p);
-      if (id == 7) return deCity(p);
-      if (id == 8) return deCrystal(p);
-      if (id == 9) return deCell(p);
-      if (id == 10) return deDNA(p);
-      if (id == 11) return deMolecule(p);
-      if (id == 12) return deOrbitals(p);
-      if (id == 13) return deNucleon(p);
-      if (id == 14) return deQGP(p);
-      if (id == 15) return deElectroweak(p);
-      if (id == 16) return deStrings(p);
-      if (id == 17) return deFoam(p);
-      if (id == 18) return deHorizon(p);
-      return deBang(p);
+      if (id == 0) return deChladni(p);
+      if (id == 1) return deLevitate(p);
+      if (id == 2) return deFaraday(p);
+      if (id == 3) return deSono(p);
+      if (id == 4) return dePhonon(p);
+      if (id == 5) return deHypersphere(p);
+      if (id == 6) return deQuadrupole(p);
+      return deSingularity(p);
     }
     float densTier(int id, vec3 p){
       float d = deTier(id, p);
-      if (id == 0) return exp(-max(d, 0.0) * 2.2) * 0.16;
-      if (id == 1) return exp(-max(d, 0.0) * 0.35) * 0.12;
-      if (id == 2) return exp(-abs(d) * 1.8) * 0.45;
-      if (id == 3) return max(0.0, 0.55 * fbm(p * 0.28 + uTime * 0.05) - 0.18);
-      if (id == 12){
-        float r = length(p);
-        return max(0.0, Ylm2(p / max(r, 1e-4)) * r * r * exp(-r * 1.2) - 0.04);
-      }
-      if (id == 14) return max(0.0, 0.65 * fbm(p * 1.1 + uTime * 0.4) - 0.2);
-      if (id == 17) return exp(-abs(d) * 3.0) * 0.4;
-      if (id == 19) return exp(-abs(d) * 2.2) * 0.8;
-      return exp(-max(d, 0.0) * 6.0) * 0.08;
+      if (id == 0) return exp(-abs(d) * 7.0) * (0.2 + 0.6 * uMid);
+      if (id == 1) return exp(-abs(d) * 5.0) * (0.15 + uHighMid);
+      if (id == 2) return exp(-abs(d) * 4.0) * (0.2 + uLowMid);
+      if (id == 3) return exp(-abs(d) * 3.0) * (0.4 + 1.6 * uTransient) + 0.15 * uFlux;
+      if (id == 4) return exp(-max(d, 0.0) * 6.0) * 0.25;
+      if (id == 5) return exp(-abs(d) * 5.0) * (0.2 + uAir);
+      if (id == 6) return exp(-abs(d) * 4.5) * (0.18 + uSubBass);
+      return exp(-abs(d) * 3.5) * (0.3 + uRMS);
     }
     vec3 palTier(int id, vec3 p, vec3 n){
       vec3 L = normalize(vec3(0.4, 0.7, 0.35));
       float ndl = clamp(dot(n, L) * 0.5 + 0.5, 0.0, 1.0);
-      if (id == 0) return vec3(0.55, 0.35, 0.9) * ndl;
-      if (id == 1) return vec3(0.45, 0.4, 0.75) * ndl;
-      if (id == 2) return vec3(1.0, 0.72, 0.38) * ndl;
-      if (id == 3) return mix(vec3(0.7, 0.15, 0.45), vec3(0.15, 0.35, 0.85), fbm(p * 0.3));
-      if (id == 4) return vec3(1.15, 0.9, 0.55) * (0.4 + ndl);
-      if (id == 5) return mix(vec3(0.85, 0.45, 0.18), vec3(1.0, 0.8, 0.5), 0.5 + 0.5 * sin(p.y * 6.0)) * ndl;
-      if (id == 6) return mix(vec3(0.12, 0.28, 0.7), vec3(0.2, 0.5, 0.18), smoothstep(-0.2, 0.6, n.y)) * ndl;
-      if (id == 7) return vec3(1.0, 0.75, 0.35) * (0.15 + ndl);
-      if (id == 8) return vec3(0.75, 0.9, 1.1) * (0.2 + pow(ndl, 3.0));
-      if (id == 9) return vec3(0.85, 0.25, 0.35) * ndl;
-      if (id == 10) return mix(vec3(0.3, 0.85, 0.65), vec3(0.95, 0.8, 0.2), step(0.0, p.x));
-      if (id == 11) return vec3(0.4, 0.7, 1.0) * ndl;
-      if (id == 12) return mix(vec3(0.3, 0.65, 1.15), vec3(1.0, 0.4, 0.2), abs(n.y));
-      if (id == 13) return mix(vec3(1.0, 0.25, 0.2), vec3(0.2, 0.4, 1.0), step(0.0, p.x));
-      if (id == 14) return hsv2rgb(vec3(fract(fbm(p) + uTime * 0.05), 0.75, 1.0));
-      if (id == 15) return vec3(0.55, 0.75, 1.1) * ndl;
-      if (id == 16) return vec3(1.0, 0.85, 0.45) * ndl;
-      if (id == 17) return vec3(0.45, 0.7, 1.0);
-      if (id == 18) return vec3(1.15, 0.78, 0.4) * (0.4 + ndl);
-      return vec3(1.2, 0.9, 0.55) * (0.5 + ndl);
+      if (id == 0) return vec3(0.95, 0.78, 0.4) * ndl;
+      if (id == 1) return vec3(0.55, 0.85, 1.1) * ndl;
+      if (id == 2) return vec3(0.3, 0.7, 1.0) * (0.3 + ndl);
+      if (id == 3) return vec3(1.3, 0.85, 0.35) * (0.5 + 1.5 * uTransient);
+      if (id == 4) return mix(vec3(0.7, 0.9, 1.1), vec3(1.0, 0.5, 0.2), uMid) * ndl;
+      if (id == 5) return hsv2rgb(vec3(fract(0.6 + uAir * 0.2), 0.55, 0.9)) * ndl;
+      if (id == 6) return vec3(1.1, 0.72, 0.35) * ndl;
+      return vec3(1.2, 0.9, 0.55) * (0.4 + ndl + uRMS);
     }
     float deMix(vec3 p, int i0, int i1, float w){
       return mix(deTier(i0, p), deTier(i1, p), w);
@@ -720,13 +778,13 @@
       vec2 uv = (2.0 * gl_FragCoord.xy - uRes) / uRes.y;
       vec3 rd = normalize(uCamFwd + uv.x * uCamRight * uFov + uv.y * uCamUp * uFov);
       vec3 ro = uCamPos;
-      float xDes = mod(max(uDescent, 0.0), 20.0);
+      float xDes = mod(max(uDescent, 0.0), 8.0);
       float i0f = floor(xDes);
       float blend = smoothstep(0.0, 1.0, fract(xDes));
       int i0 = int(i0f);
-      int i1 = int(mod(i0f + 1.0, 20.0));
-      float wellAmt = smoothstep(16.6, 18.0, xDes) * (1.0 - smoothstep(18.9, 19.85, xDes));
-      float lensAmt = wellAmt + smoothstep(0.0, 2.5, xDes) * 0.35 * (1.0 - smoothstep(5.0, 8.0, xDes));
+      int i1 = int(mod(i0f + 1.0, 8.0));
+      float wellAmt = smoothstep(5.6, 6.4, xDes) + smoothstep(6.6, 7.2, xDes);
+      float lensAmt = wellAmt + uSubBass * 0.4;
 
       vec3 pos = ro;
       vec3 vel = rd;
@@ -1354,7 +1412,7 @@
     const cam = {
       yaw: 0.55,
       pitch: 0.38,
-      zoom: Number.isFinite(qD) ? qD : (reduced ? 19 : 18.35),
+      zoom: Number.isFinite(qD) ? qD : 1,
       dist: 16.4,
       vy: 0, vp: 0, vd: 0,
       auto: true
@@ -1444,7 +1502,9 @@
     });
 
     let ac, analyser, masterGain, filterNode, waveData;
-    let noiseGainNode, fmGainNode, droneGainNode, subOsc, fmOsc;
+    let noiseGainNode, fmGainNode, droneGainNode, subOsc, fmOsc, beatOsc;
+    let freqBuf, timeBuf, prevSpec;
+    let audioBands = { SubBass:0, Bass:0, LowMid:0, Mid:0, HighMid:0, Air:0, rms:0, transient:0, flux:0, pascals:0 };
     const auBtn = document.getElementById("au");
     const waveEl = document.getElementById("wave");
     waveEl.innerHTML = Array.from({ length: 22 }, () => "<i></i>").join("");
@@ -1482,25 +1542,28 @@
         masterGain = ac.createGain();
         masterGain.gain.value = 0;
         analyser = ac.createAnalyser();
-        analyser.fftSize = 64;
+        analyser.fftSize = 4096;
+        analyser.smoothingTimeConstant = 0.7;
         masterGain.connect(analyser);
         analyser.connect(ac.destination);
-        waveData = new Uint8Array(analyser.frequencyBinCount);
+        waveData = new Uint8Array(64);
+        freqBuf = new Uint8Array(analyser.frequencyBinCount);
+        timeBuf = new Uint8Array(analyser.fftSize);
+        prevSpec = new Float32Array(analyser.frequencyBinCount);
 
-        const boot = PRISM.audioForDescent(cam.zoom);
+        const boot = PRISM.droneForDomain(cam.zoom);
         subOsc = ac.createOscillator();
         subOsc.type = "sine";
         subOsc.frequency.value = boot.subHz;
         droneGainNode = ac.createGain();
         droneGainNode.gain.value = boot.droneGain;
         subOsc.connect(droneGainNode).connect(masterGain);
-        const d2 = ac.createOscillator();
-        d2.type = "triangle";
-        d2.frequency.value = boot.droneHz;
-        d2.detune.value = 6;
-        const d2g = ac.createGain();
-        d2g.gain.value = boot.droneGain * 0.2;
-        d2.connect(d2g).connect(masterGain);
+        beatOsc = ac.createOscillator();
+        beatOsc.type = "sine";
+        beatOsc.frequency.value = boot.droneHz + boot.beatHz;
+        const beatG = ac.createGain();
+        beatG.gain.value = boot.droneGain * 0.35;
+        beatOsc.connect(beatG).connect(masterGain);
         fmOsc = ac.createOscillator();
         fmOsc.type = "sine";
         fmOsc.frequency.value = boot.fmHz;
@@ -1520,11 +1583,32 @@
         noiseGainNode = ac.createGain();
         noiseGainNode.gain.value = boot.noiseGain;
         noise.connect(filterNode).connect(noiseGainNode).connect(masterGain);
-        subOsc.start(); d2.start(); fmOsc.start(); noise.start();
+        subOsc.start(); beatOsc.start(); fmOsc.start(); noise.start();
         masterGain.gain.linearRampToValueAtTime(0.85, ac.currentTime + 2.4);
       }
       if (ac.state === "suspended") await ac.resume();
       auBtn.textContent = "[ Audio // Online ]";
+    });
+    const micBtn = document.getElementById("mic");
+    let micOn = false, micSrc = null;
+    micBtn.addEventListener("click", async () => {
+      if (!ac) auBtn.click();
+      if (ac.state === "suspended") await ac.resume();
+      if (!micOn) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          micSrc = ac.createMediaStreamSource(stream);
+          micSrc.connect(analyser);
+          micOn = true;
+          micBtn.textContent = "[ Mic // Live ]";
+        } catch (err) {
+          micBtn.textContent = "[ Mic // Denied ]";
+        }
+      } else {
+        if (micSrc) try { micSrc.disconnect(); } catch (_) {}
+        micOn = false;
+        micBtn.textContent = "[ Mic // Off ]";
+      }
     });
 
     document.getElementById("pc").textContent = nP.toLocaleString();
@@ -1538,10 +1622,14 @@
       const zed = 1 / Math.sqrt(Math.max(0.05, 1 - 1 / Math.max(cam.dist, 1.05))) - 1;
       document.getElementById("zed").textContent = zed.toFixed(3);
       document.getElementById("layer").textContent = hudMap.name;
-      const expN = hudMap.exp;
-      document.getElementById("scale").textContent =
-        (expN >= 0 ? "10^" + Math.round(expN) : "10^-" + Math.abs(Math.round(expN))) + " m";
-      const aud = PRISM.audioForDescent(cam.zoom);
+      document.getElementById("modes").textContent =
+        hudMap.m.toFixed(0) + " · " + hudMap.n.toFixed(0) + " · " + hudMap.l.toFixed(0);
+      document.getElementById("pascals").textContent = (audioBands.pascals || 0).toFixed(2) + " Pa";
+      const rmsEl = document.getElementById("rms");
+      if (rmsEl) rmsEl.textContent = (audioBands.rms || 0).toFixed(2);
+      const fluxEl = document.getElementById("flux");
+      if (fluxEl) fluxEl.textContent = (audioBands.flux || 0).toFixed(3);
+      const aud = PRISM.droneForDomain(cam.zoom);
       if (filterNode && ac) {
         filterNode.frequency.value = aud.filterHz + pulseAmp * 80;
         if (noiseGainNode) noiseGainNode.gain.value = aud.noiseGain;
@@ -1549,6 +1637,7 @@
         if (droneGainNode) droneGainNode.gain.value = aud.droneGain;
         if (subOsc) subOsc.frequency.value = aud.subHz;
         if (fmOsc) fmOsc.frequency.value = aud.fmHz;
+        if (beatOsc) beatOsc.frequency.value = aud.droneHz + aud.beatHz;
       }
     }
     syncHud();
@@ -1580,7 +1669,7 @@
         const k = Math.min(t / 3.8, 1);
         const e = 1 - Math.pow(1 - k, 3);
         if (t < 4.2 && !Number.isFinite(qD)) {
-          cam.zoom += (19 - cam.zoom) * (0.55 * dt + 0.012);
+          cam.zoom += (1 - cam.zoom) * (0.55 * dt + 0.012);
         }
         exposure = Math.min(1, Math.max(0, (t - 0.35) / 2.4));
         if (t > 2.4) document.getElementById("hud").classList.add("on");
@@ -1662,8 +1751,40 @@
       gl.uniform1f(progBH.u.uPulse, pulse);
       gl.uniform1f(progBH.u.uPulseAmp, pulseAmp);
       gl.uniform1f(progBH.u.uSteps, steps);
+      if (analyser && freqBuf && timeBuf) {
+        analyser.getByteFrequencyData(freqBuf);
+        analyser.getByteTimeDomainData(timeBuf);
+        audioBands = PRISM.analyzeAudio(freqBuf, timeBuf, {
+          sampleRate: ac.sampleRate,
+          fftSize: analyser.fftSize,
+          prevSpectrum: prevSpec
+        });
+        for (let i = 0; i < freqBuf.length; i++) prevSpec[i] = freqBuf[i];
+        if (audioBands.bands64) {
+          waveBars.forEach((bar, i) => {
+            const v = audioBands.bands64[i % audioBands.bands64.length];
+            bar.style.height = (3 + v * 19) + "px";
+          });
+        }
+        const bandEls = document.querySelectorAll("#bands i");
+        const keys = ["SubBass", "Bass", "LowMid", "Mid", "HighMid", "Air"];
+        bandEls.forEach((el, i) => {
+          el.style.height = (2 + (audioBands[keys[i]] || 0) * 16) + "px";
+        });
+      }
+
       gl.uniform1f(progBH.u.uCamDist, cam.dist);
       gl.uniform1f(progBH.u.uFall, uDes);
+      gl.uniform1f(progBH.u.uSubBass, audioBands.SubBass || 0);
+      gl.uniform1f(progBH.u.uBass, audioBands.Bass || 0);
+      gl.uniform1f(progBH.u.uLowMid, audioBands.LowMid || 0);
+      gl.uniform1f(progBH.u.uMid, audioBands.Mid || 0);
+      gl.uniform1f(progBH.u.uHighMid, audioBands.HighMid || 0);
+      gl.uniform1f(progBH.u.uAir, audioBands.Air || 0);
+      gl.uniform1f(progBH.u.uRMS, audioBands.rms || 0);
+      gl.uniform1f(progBH.u.uTransient, audioBands.transient || 0);
+      gl.uniform1f(progBH.u.uFlux, audioBands.flux || 0);
+      gl.uniform3f(progBH.u.uModes, mapped.m, mapped.n, mapped.l);
       gl.uniform1f(progBH.u.uDescent, uDes);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 

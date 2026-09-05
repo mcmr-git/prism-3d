@@ -21,26 +21,19 @@ if (!PRISM || typeof PRISM.mapDescent !== "function") {
 }
 
 const NAMES = [
-  "Laniakea Filament Web",
-  "Galaxy Cluster & Dark Matter Halo",
-  "Spiral Galaxy Core & Stellar Arms",
-  "Nebular Stellar Nursery",
-  "Star System & Oort Cloud",
-  "Gas Giant with Ring System & Aurora",
-  "Terrestrial Biosphere Planet",
-  "Megacity / Geodesic Architectural Sprawl",
-  "Crystalline Monolith / Surface Micro-geometry",
+  "3D Chladni Nodal Surfaces",
+  "Acoustic Levitation Manifold",
+  "Fluid Faraday Wave Turbulence",
+  "Sonoluminescence Plasma Core",
+  "Quantum Acoustic Phonon Lattice",
+  "Non-Euclidean 4D Cymatic Hypersphere",
+  "Gravitational Wave Quadrupole Ripple",
+  "The Infinite Sonic Singularity"
+];
+const BANNED = [
   "Organic Cellular Membrane & Cytoplasm",
   "DNA Double Helix & Ribosome Motors",
-  "Molecular Lattice & Electron Density Clouds",
-  "Atomic Shell & Probability Orbitals (s, p, d, f)",
-  "Nucleon Core (Protons / Neutrons)",
-  "Quark-Gluon Plasma & Color Charge Flux",
-  "Electroweak Symmetry Breaking Lattice",
-  "Grand Unified Theory String Vibrations",
-  "Quantum Foam / Spacetime Topology Fluctuations",
-  "Event Horizon Throat & Wormhole Bridge",
-  "Genesis Bang / New Multiverse Rebirth"
+  "Terrestrial Biosphere Planet"
 ];
 
 const lines = [];
@@ -49,47 +42,54 @@ function ok(cond, msg) {
   if (!cond) throw new Error(msg);
 }
 
-ok(PRISM.TIERS.length === 20, "20 tier records");
+ok(PRISM.DOMAINS.length === 8, "8 domain records");
 const seen = new Set();
-for (let i = 1; i <= 20; i++) {
+for (let i = 1; i <= 8; i++) {
   const r = PRISM.mapDescent(i);
-  ok(r.tierIndex === i, "integer " + i + " → tierIndex " + r.tierIndex);
+  ok(r.domainIndex === i || r.tierIndex === i, "integer " + i + " → index " + r.domainIndex);
   ok(r.name === NAMES[i - 1], "integer " + i + " → " + r.name);
   ok(r.blend === 0 || r.blend < 1e-12, "integer " + i + " blend ~0 got " + r.blend);
-  ok(!seen.has(r.name), "unique name " + r.name);
+  ok(!seen.has(r.name), "unique " + r.name);
   seen.add(r.name);
 }
-ok(seen.size === 20, "all 20 names unique");
+ok(seen.size === 8, "all 8 names unique");
+BANNED.forEach((n) => ok(!seen.has(n), "banned organic label absent: " + n));
 
-const frac = PRISM.mapDescent(3.4);
-ok(frac.tierIndex === 3, "3.4 stays on tier 3");
+const frac = PRISM.mapDescent(2.4);
+ok(frac.domainIndex === 2, "2.4 stays on domain 2");
 ok(frac.blend > 0 && frac.blend < 1, "fractional blend in (0,1) got " + frac.blend);
-ok(frac.nextIndex === 4, "3.4 next is 4");
 
-const wrapA = PRISM.mapDescent(21);
-ok(wrapA.tierIndex === 1, "21 wraps to tier 1 got " + wrapA.tierIndex);
-ok(wrapA.name === NAMES[0], "21 wraps to Laniakea Filament Web");
-const wrapB = PRISM.mapDescent(20.0001);
-ok(wrapB.tierIndex === 20 || wrapB.tierIndex === 1, "just past 20 is 20-blend or 1");
-const wrapC = PRISM.mapDescent(40);
-ok(wrapC.tierIndex === 20, "40 ≡ 20 Genesis, got " + wrapC.tierIndex + " " + wrapC.name);
-const wrapD = PRISM.mapDescent(41);
-ok(wrapD.tierIndex === 1 && wrapD.name === NAMES[0], "41 wraps to Laniakea, not clamp");
+const wrap = PRISM.mapDescent(9);
+ok(wrap.domainIndex === 1 && wrap.name === NAMES[0], "9 wraps to Chladni, not clamp");
+ok(PRISM.mapDescent(17).name === NAMES[0], "17 wraps to domain 1");
 
-const cosmic = PRISM.audioForDescent(3);
-ok(cosmic.band === "cosmic", "tier 3 audio band cosmic");
-ok(cosmic.subHz < 50, "cosmic sub-bass < 50Hz got " + cosmic.subHz);
-ok(cosmic.droneGain > cosmic.noiseGain, "cosmic drone dominates noise");
+ok(typeof PRISM.analyzeAudio === "function", "analyzeAudio exported");
+const sr = 44100, fft = 4096, nBins = fft / 2;
+function spec(fill) {
+  const a = new Float32Array(nBins);
+  for (let i = 0; i < nBins; i++) a[i] = fill(i, i * sr / fft);
+  return a;
+}
+const low = spec((i, hz) => (hz >= 20 && hz < 60 ? 0.9 : 0.02));
+const high = spec((i, hz) => (hz >= 6000 && hz < 20000 ? 0.9 : 0.02));
+const zeros = new Float32Array(nBins);
+const timeQuiet = new Float32Array(512);
+const timeImpulse = new Float32Array(512);
+timeImpulse[10] = 1;
+const A = PRISM.analyzeAudio(low, timeQuiet, { sampleRate: sr, fftSize: fft, prevSpectrum: zeros });
+const B = PRISM.analyzeAudio(high, timeQuiet, { sampleRate: sr, fftSize: fft, prevSpectrum: zeros });
+ok(A.SubBass > A.Air, "low-frequency spectrum raises SubBass over Air " + A.SubBass + " vs " + A.Air);
+ok(B.Air > B.SubBass, "high-frequency spectrum raises Air over SubBass " + B.Air + " vs " + B.SubBass);
+const C = PRISM.analyzeAudio(low, timeImpulse, { sampleRate: sr, fftSize: fft, prevSpectrum: zeros });
+ok(C.transient > A.transient, "impulse raises transient");
+ok(C.flux > 0, "spectrum vs prev zeros raises flux " + C.flux);
+ok(A.rms >= 0 && "pascals" in A, "RMS and pascals present");
 
-const crystal = PRISM.audioForDescent(12);
-ok(crystal.band === "crystalline", "tier 12 audio band crystalline");
-ok(crystal.fmHz > 300, "crystalline FM > 300Hz got " + crystal.fmHz);
-ok(crystal.fmGain > cosmic.fmGain, "crystalline FM gain above cosmic");
+const d1 = PRISM.droneForDomain(1);
+const d8 = PRISM.droneForDomain(8);
+ok(d1.subHz !== d8.subHz || d1.noiseGain !== d8.noiseGain, "drone params change Chladni vs Singularity");
+ok(d8.noiseGain > d1.noiseGain, "singularity noiseGain > chladni");
 
-const planck = PRISM.audioForDescent(18);
-ok(planck.band === "planck", "tier 18 audio band planck");
-ok(planck.noiseGain > planck.droneGain, "planck noise dominates drone " + planck.noiseGain + " vs " + planck.droneGain);
-
-lines.push("OK  " + seen.size + " tiers, wrap, blend, audio curves");
+lines.push("OK  8 domains, wrap, blend, FFT bands, drone");
 console.log(lines.join("\n"));
 process.exit(0);

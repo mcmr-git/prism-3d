@@ -4,26 +4,19 @@ const fs = require("fs");
 const path = require("path");
 const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const names = [
-  "Laniakea Filament Web",
-  "Galaxy Cluster & Dark Matter Halo",
-  "Spiral Galaxy Core & Stellar Arms",
-  "Nebular Stellar Nursery",
-  "Star System & Oort Cloud",
-  "Gas Giant with Ring System & Aurora",
-  "Terrestrial Biosphere Planet",
-  "Megacity / Geodesic Architectural Sprawl",
-  "Crystalline Monolith / Surface Micro-geometry",
+  "3D Chladni Nodal Surfaces",
+  "Acoustic Levitation Manifold",
+  "Fluid Faraday Wave Turbulence",
+  "Sonoluminescence Plasma Core",
+  "Quantum Acoustic Phonon Lattice",
+  "Non-Euclidean 4D Cymatic Hypersphere",
+  "Gravitational Wave Quadrupole Ripple",
+  "The Infinite Sonic Singularity"
+];
+const banned = [
   "Organic Cellular Membrane & Cytoplasm",
   "DNA Double Helix & Ribosome Motors",
-  "Molecular Lattice & Electron Density Clouds",
-  "Atomic Shell & Probability Orbitals (s, p, d, f)",
-  "Nucleon Core (Protons / Neutrons)",
-  "Quark-Gluon Plasma & Color Charge Flux",
-  "Electroweak Symmetry Breaking Lattice",
-  "Grand Unified Theory String Vibrations",
-  "Quantum Foam / Spacetime Topology Fluctuations",
-  "Event Horizon Throat & Wormhole Bridge",
-  "Genesis Bang / New Multiverse Rebirth"
+  "Terrestrial Biosphere Planet"
 ];
 const lines = [];
 let fail = 0;
@@ -32,23 +25,25 @@ function check(cond, msg) {
   if (!cond) fail++;
 }
 names.forEach((n) => check(html.indexOf(n) !== -1, "name present: " + n));
+banned.forEach((n) => check(html.indexOf(n) === -1, "organic label stripped: " + n));
 check(/webgl2/i.test(html), "webgl2 context");
 check(/#version 300 es/.test(html), "GLSL ES 3.00");
-check(!/\bTHREE\b/.test(html) && !/three\.js/i.test(html) && !/from ['"]three['"]/.test(html), "no Three.js");
-check(/<script id="prism-core">/.test(html), "inline prism-core (not a module import)");
+check(!/\bTHREE\b/.test(html) && !/three\.js/i.test(html), "no Three.js");
+check(/<script id="prism-core">/.test(html), "inline prism-core");
 check(!/type=["']module["']/.test(html), "no type=module");
 check(!/importmap/i.test(html), "no import maps");
-check(/getContext\(\s*["']webgl2["']/.test(html), "creates webgl2 context");
-check(!/\binnerCosmos\s*\(/.test(html), "innerCosmos look-dir overlay removed");
+check(/createAnalyser|AnalyserNode/.test(html), "Web Audio analyser");
+check(/fftSize\s*=\s*4096/.test(html), "64-band-capable FFT (4096)");
+check(/getByteFrequencyData/.test(html), "frequency data");
 [
-  "deLaniakea", "deCluster", "deSpiral", "deNebula", "deOort", "deGiant",
-  "deTerra", "deCity", "deCrystal", "deCell", "deDNA", "deMolecule",
-  "deOrbitals", "deNucleon", "deQGP", "deElectroweak", "deStrings",
-  "deFoam", "deHorizon", "deBang"
+  "deChladni", "deLevitate", "deFaraday", "deSono",
+  "dePhonon", "deHypersphere", "deQuadrupole", "deSingularity"
 ].forEach((fn) => check(html.indexOf("float " + fn) !== -1, "DE " + fn));
-check(/Ylm2\s*\(/.test(html) && /Y20/.test(html), "spherical-harmonic orbitals");
-check(/deMix\s*\(/.test(html) && /smoothstep\(0\.0,\s*1\.0,\s*fract\(xDes\)\)/.test(html), "uDescent smoothstep DE mix");
-check(/lensAmt/.test(html) && /-1\.5 \* RS/.test(html), "gravitational lensing geodesic");
+check(/float j0\s*\(/.test(html) && /float jn\s*\(/.test(html), "spherical Bessel j_n");
+check(/float legendP\s*\(/.test(html) && /float assocP\s*\(/.test(html), "Legendre P_n^m");
+check(/pointerdown/.test(html) && /wheel/.test(html) && /click/.test(html), "pointer orbit/zoom/shockwave");
+check(/touchmove/.test(html), "pinch zoom");
+check(/fonts\.googleapis/.test(html) === false, "no Google Fonts CDN");
 console.log(lines.join("\n"));
 if (fail) process.exit(1);
 process.exit(0);
