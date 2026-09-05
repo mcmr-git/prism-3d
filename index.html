@@ -8,7 +8,7 @@
   <title>PRISM / Event Horizon</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='14' fill='none' stroke='%23d9a66d' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%2305030a'/%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%23d9a66d' stroke-width='.6' opacity='.5'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -67,37 +67,9 @@
       transition: opacity 1.2s ease;
     }
     #hud.on { opacity: 1; }
-    .kicker {
-      font-size: 10px;
-      color: var(--gold);
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-    }
-    h1 {
-      font-family: "Cormorant Garamond", Georgia, serif;
-      font-weight: 500;
-      font-size: clamp(52px, 10.5vw, 124px);
-      line-height: 0.8;
-      letter-spacing: 0.02em;
-      margin: 10px 0 14px;
-      color: var(--ivory);
-    }
-    h1 em {
-      font-style: italic;
-      display: block;
-      color: var(--gold);
-    }
-    .sub {
-      font-size: 10px;
-      color: var(--dim);
-      max-width: 28em;
-      line-height: 1.7;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-    }
     .top {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       gap: 24px;
       align-items: flex-start;
     }
@@ -201,36 +173,6 @@
       opacity: 0.85;
       height: 3px;
     }
-    #mark {
-      position: fixed;
-      inset: 0;
-      z-index: 8;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-      background: transparent;
-      opacity: 1;
-      transition: opacity 1.4s ease;
-    }
-    #mark.out { opacity: 0; }
-    body.live #mark { display: none; }
-    #mark strong {
-      font-family: "Cormorant Garamond", Georgia, serif;
-      font-weight: 500;
-      font-size: clamp(64px, 14vw, 180px);
-      letter-spacing: 0.18em;
-      font-style: italic;
-      color: var(--ivory);
-    }
-    #mark small {
-      margin-top: 8px;
-      font-size: 11px;
-      letter-spacing: 0.42em;
-      color: var(--gold);
-      text-transform: uppercase;
-    }
     .lb {
       position: fixed;
       left: 0; right: 0;
@@ -258,14 +200,12 @@
     @media (max-width: 720px) {
       .tele span { min-width: 72px; padding: 4px 8px; }
       .clock { display: none; }
-      h1 { font-size: clamp(44px, 16vw, 80px); }
       .hint { max-width: 100%; }
       .audio-wrap { width: 100%; align-items: stretch; }
       button.audio { width: 100%; }
     }
     @media (prefers-reduced-motion: reduce) {
       #hud { opacity: 1; }
-      #mark { display: none; }
       .lb { height: 0; }
     }
   </style>
@@ -276,28 +216,23 @@
   <div id="vignette"></div>
   <i class="lb top"></i>
   <i class="lb bot"></i>
-  <div id="mark"><strong>PRISM</strong><small>observatory 001</small></div>
   <div id="hud">
     <div class="top">
-      <div>
-        <div class="kicker">Prism / 001 — Observatory</div>
-        <h1>EVENT<em>HORIZON</em></h1>
-        <div class="sub">Relativistic field study · null geodesics · glass prisms in orbit</div>
-      </div>
       <div class="clock">
         Proper time τ
         <b id="tau">00:00.<span>00</span></b>
         <div style="margin-top:14px">Radius <b id="rad" style="font-size:13px;margin-top:4px">16.2 Rs</b></div>
         <div style="margin-top:10px">Redshift z <b id="zed" style="font-size:13px;margin-top:4px">0.032</b></div>
+        <div style="margin-top:10px">Layer <b id="layer" style="font-size:13px;margin-top:4px">THE WELL</b></div>
       </div>
     </div>
     <div class="bottom">
       <div>
-        <div class="hint" id="hint">Drag to orbit · scroll to approach · click to drop mass</div>
+        <div class="hint" id="hint">Drag to orbit · scroll to descend · click to drop mass</div>
         <div class="tele">
           <span>FPS<b id="fps">—</b></span>
           <span>Particles<b id="pc">—</b></span>
-          <span>Prisms<b id="pr">—</b></span>
+          <span>Worlds<b id="pr">—</b></span>
           <span>Steps<b id="st">—</b></span>
           <span>Pulse<b id="pu">0.00</b></span>
         </div>
@@ -330,9 +265,6 @@
       premultipliedAlpha: false
     });
     if (reduced) {
-      const mark = document.getElementById("mark");
-      mark.classList.add("out");
-      mark.style.display = "none";
       document.getElementById("hud").classList.add("on");
       document.body.classList.add("live");
     }
@@ -392,7 +324,7 @@
     out vec4 fragColor;
     uniform vec2 uRes;
     uniform vec3 uCamPos, uCamFwd, uCamRight, uCamUp;
-    uniform float uTime, uFov, uExposure, uPulse, uPulseAmp, uSteps;
+    uniform float uTime, uFov, uExposure, uPulse, uPulseAmp, uSteps, uCamDist;
 
     vec3 hsv2rgb(vec3 c){
       vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
@@ -432,6 +364,48 @@
       }
       return col;
     }
+    vec3 galaxyBand(vec3 dir, float seed){
+      float d = dir.y * 0.94 + dir.x * 0.16;
+      float band = exp(-d * d * 22.0);
+      float a = atan(dir.z, dir.x) + seed;
+      float r = length(dir.xz);
+      float arm = 0.45 + 0.55 * sin(a * 2.0 + r * 8.0 + seed * 3.0);
+      float dust = 0.55 + 0.45 * sin(a * 5.0 - r * 13.0);
+      vec3 gold = vec3(1.0, 0.70, 0.36);
+      vec3 ash = vec3(0.28, 0.16, 0.12);
+      return mix(ash, gold, arm * dust) * band * 0.30;
+    }
+    vec3 distantGalaxies(vec3 dir){
+      vec3 col = vec3(0.0);
+      for (int i = 0; i < 5; i++){
+        float fi = float(i) + 1.7;
+        vec3 c = normalize(vec3(
+          hash13(vec3(fi, 0.2, 1.3)) * 2.0 - 1.0,
+          (hash13(vec3(fi, 4.1, 0.8)) - 0.5) * 0.85,
+          hash13(vec3(fi, 2.6, 7.2)) * 2.0 - 1.0
+        ));
+        float ang = 1.0 - clamp(dot(dir, c), -1.0, 1.0);
+        float core = exp(-ang * 1600.0);
+        float halo = exp(-ang * 220.0);
+        vec3 tint = mix(vec3(0.55, 0.48, 0.85), vec3(1.05, 0.72, 0.38), hash13(vec3(fi, 3.3, 9.1)));
+        col += tint * (core * 0.45 + halo * 0.035);
+      }
+      return col;
+    }
+    vec3 innerCosmos(vec3 dir){
+      vec3 d2 = normalize(vec3(dir.z, -dir.x, dir.y));
+      vec3 col = starfield(d2) * 1.55;
+      col += galaxyBand(d2, 2.4) * 3.2;
+      col += galaxyBand(d2.zxy, 5.1) * 1.4;
+      col += distantGalaxies(d2.zxy) * 1.1;
+      float rho = length(d2.xz);
+      float ring = exp(-abs(rho - 0.22) * 28.0) * (1.0 - abs(d2.y));
+      col += vec3(1.15, 0.74, 0.38) * ring * 1.35;
+      float well = smoothstep(0.08, 0.018, length(d2.xz - vec2(0.10, -0.03)));
+      col *= 1.0 - well * 0.92;
+      col += vec3(1.2, 0.8, 0.42) * well * 0.12;
+      return col;
+    }
     float diskNoise(vec2 xz, float r, float t){
       float a = atan(xz.y, xz.x);
       float spiral = a * 2.4 + r * 0.55 - t * 1.35;
@@ -468,7 +442,7 @@
         float r = length(pos);
         minR = min(minR, r);
         if (r < 1.02) { captured = true; break; }
-        if (r > 48.0 && i > 6) { escaped = true; break; }
+        if (r > 110.0 && i > 6) { escaped = true; break; }
 
         float h = 0.15 * clamp(r - 0.42, 0.045, 3.2);
         float r5 = r * r * r * r * r;
@@ -514,21 +488,27 @@
         col += transmit * vec3(1.0, 0.62, 0.28) * fog * h * 2.2;
       }
 
+      float reveal = smoothstep(15.0, 4.6, uCamDist);
+      float macro = smoothstep(14.0, 30.0, uCamDist);
+      vec3 look = normalize(vel);
       if (!captured){
-        col += transmit * starfield(normalize(vel));
+        col += transmit * starfield(look);
+        col += transmit * distantGalaxies(look) * (0.35 + 0.9 * macro);
+        col += transmit * galaxyBand(look, 0.35) * macro * 0.85;
       } else {
-        col *= 0.55;
+        col *= 0.28;
+        col += innerCosmos(look) * (0.4 + 1.7 * reveal);
       }
 
       float ring = exp(-abs(minR - 1.52) * 18.0);
       if (!captured){
         col += ring * vec3(1.35, 0.92, 0.52) * 1.35;
-        col += ring * hsv2rgb(vec3(fract(0.08 + uTime * 0.03 + atan(rd.z, rd.x) * 0.15), 0.5, 0.55)) * 0.28;
+        col += ring * hsv2rgb(vec3(fract(0.08 + uTime * 0.03 + atan(rd.z, rd.x) * 0.15), 0.5, 0.55)) * 0.18;
       }
 
       float impact = length(cross(uCamPos, rd));
-      float jet = exp(-impact * 1.6) * smoothstep(0.15, 0.85, abs(rd.y)) * 0.12;
-      col += vec3(0.55, 0.72, 1.1) * jet * uExposure;
+      float jet = exp(-impact * 2.1) * smoothstep(0.22, 0.9, abs(rd.y)) * 0.06 * (1.0 - reveal * 0.5);
+      col += vec3(1.0, 0.68, 0.32) * jet * uExposure;
 
       col *= uExposure;
       col = col / (1.0 + col * 0.35);
@@ -600,7 +580,7 @@
     in vec4 aData;
     in vec3 aCol;
     uniform mat4 uMVP;
-    uniform float uTime, uPulse, uPulseAmp;
+    uniform float uTime, uPulse, uPulseAmp, uCamDist;
     uniform vec3 uMass;
     uniform float uMassG, uPoint;
     out vec3 vCol;
@@ -609,28 +589,24 @@
       float y = aData.y;
       float phase = aData.z;
       float kind = aData.w;
-      float omega = (kind < 0.5) ? (0.55 / sqrt(r + 0.2)) : (kind < 1.5 ? 0.12 : 0.22 / sqrt(r + 0.4));
+      float omega = (kind < 0.5) ? (0.55 / sqrt(r + 0.2)) : (kind < 1.5 ? 0.045 : 0.85 / sqrt(r + 0.15));
       float a = phase + uTime * omega;
-      vec3 pos;
-      if (kind > 1.5 && kind < 2.5){
-        float s = fract(phase + uTime * 0.08);
-        float h = mix(-11.0, 11.0, s);
-        float rad = 0.18 + abs(h) * 0.04;
-        pos = vec3(cos(a) * rad, h, sin(a) * rad);
-      } else {
-        pos = vec3(cos(a) * r, y, sin(a) * r);
-      }
+      vec3 pos = vec3(cos(a) * r, y, sin(a) * r);
       float shock = exp(-abs(length(pos.xz) - uPulse) * 2.8) * uPulseAmp;
-      pos.y += shock * 0.45;
+      pos.y += shock * 0.28;
       vec3 d = pos - uMass;
       float d2 = dot(d, d) + 0.55;
       pos += d * (-uMassG / d2);
+      float vis = 1.0;
+      if (kind > 0.5 && kind < 1.5) vis = smoothstep(11.0, 22.0, uCamDist);
+      else if (kind > 1.5) vis = smoothstep(12.0, 5.2, uCamDist);
+      else vis = mix(0.45, 1.0, smoothstep(40.0, 16.0, uCamDist));
       gl_Position = uMVP * vec4(pos, 1.0);
-      float size = (kind < 0.5) ? 2.4 : (kind < 1.5 ? 3.6 : 2.0);
-      size += shock * 5.0;
-      gl_PointSize = size * uPoint / max(gl_Position.w, 0.4);
-      vCol = aCol + shock * vec3(1.1, 0.45, 0.12);
-      vCol *= 0.55 / (0.18 + length(pos) * 0.05);
+      float size = (kind < 0.5) ? 2.2 : (kind < 1.5 ? 2.8 : 1.7);
+      size += shock * 3.2;
+      gl_PointSize = vis * size * uPoint / max(gl_Position.w, 0.4);
+      vCol = aCol + shock * vec3(1.0, 0.5, 0.14);
+      vCol *= vis * 0.48 / (0.16 + length(pos) * 0.045);
     }`;
 
     const FS_PT = `#version 300 es
@@ -660,11 +636,11 @@
       float scale = aInstA.w;
       float spin = aInstB.x;
       float tilt = aInstB.y;
-      float hue = aInstB.z;
-      float omega = 0.42 / sqrt(r + 0.3);
+      float seed = aInstB.z;
+      float omega = 0.11 / sqrt(r + 0.8);
       float a = phase + uTime * omega;
       vec3 orbit = vec3(cos(a) * r, y, sin(a) * r);
-      float c = cos(uTime * spin), s = sin(uTime * spin);
+      float c = cos(uTime * spin * 0.15), s = sin(uTime * spin * 0.15);
       float ct = cos(tilt), st = sin(tilt);
       mat3 rotY = mat3(c,0.0,s, 0.0,1.0,0.0, -s,0.0,c);
       mat3 rotX = mat3(1.0,0.0,0.0, 0.0,ct,-st, 0.0,st,ct);
@@ -672,7 +648,7 @@
       vec3 wp = orbit + R * (aPos * scale);
       vW = wp;
       vN = normalize(R * aNrm);
-      vColHint = vec3(hue, scale, r);
+      vColHint = vec3(seed, scale, r);
       gl_Position = uMVP * vec4(wp, 1.0);
     }`;
 
@@ -682,25 +658,28 @@
     uniform vec3 uCamPos;
     uniform float uTime, uPulseAmp;
     out vec4 o;
-    vec3 hsv2rgb(vec3 c){
-      vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
-      vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-      return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    float hash13(vec3 p){
+      p = fract(p * 0.1031);
+      p += dot(p, p.yzx + 33.33);
+      return fract((p.x + p.y) * p.z);
     }
     void main(){
       vec3 n = normalize(vN);
       vec3 v = normalize(uCamPos - vW);
-      vec3 toHole = normalize(-vW);
-      float ndl = max(0.0, dot(n, toHole));
-      float fres = pow(1.0 - max(dot(n, v), 0.0), 2.6);
-      float hole = 0.55 / (dot(vW, vW) * 0.06 + 0.35);
-      vec3 base = vec3(0.16, 0.13, 0.1);
-      vec3 gold = vec3(1.0, 0.78, 0.45) * hole * ndl;
-      vec3 spec = vec3(1.0, 0.92, 0.75) * fres;
-      vec3 irid = hsv2rgb(vec3(fract(vColHint.x + fres * 0.35 + uTime * 0.02), 0.5, 0.7)) * fres;
-      vec3 col = base * (0.25 + ndl) + gold + spec * 0.85 + irid * 0.65;
-      col += uPulseAmp * irid * 0.5;
-      float alpha = 0.28 + fres * 0.62;
+      vec3 L = normalize(-vW);
+      float ndl = max(0.0, dot(n, L));
+      float wrap = clamp(dot(n, L) * 0.55 + 0.45, 0.0, 1.0);
+      float crater = hash13(floor(n * 9.0 + vColHint.x * 7.0));
+      float grain = hash13(n * 18.0 + vColHint.x);
+      vec3 rock = mix(vec3(0.055, 0.048, 0.042), vec3(0.16, 0.12, 0.09), crater);
+      rock = mix(rock, vec3(0.10, 0.09, 0.08), grain * 0.45);
+      if (vColHint.x > 0.62) rock = mix(rock, vec3(0.12, 0.11, 0.13), 0.35);
+      float illum = 1.6 / (length(vW) * 0.07 + 0.45);
+      vec3 gold = vec3(1.0, 0.70, 0.34) * ndl * illum;
+      float fres = pow(1.0 - max(dot(n, v), 0.0), 3.4);
+      vec3 atmos = vec3(1.0, 0.74, 0.42) * fres * ndl * 0.42;
+      vec3 col = rock * (0.06 + wrap * 0.55) + gold * rock * 3.2 + atmos;
+      col += uPulseAmp * gold * 0.12;
       vec3 rd = normalize(vW - uCamPos);
       float tca = dot(-uCamPos, rd);
       float dist = length(vW - uCamPos);
@@ -708,7 +687,7 @@
         float d2 = dot(uCamPos, uCamPos) - tca * tca;
         if (d2 < 1.05) discard;
       }
-      o = vec4(col, alpha);
+      o = vec4(col, 1.0);
     }`;
 
     const VS_INFALL = `#version 300 es
@@ -762,11 +741,10 @@
       else gl.bindVertexArray(vaoComp);
     }
 
-    const nDisk = mobile ? 9000 : 24000;
-    const nHalo = mobile ? 900 : 2800;
-    const nJet  = mobile ? 1000 : 3200;
-    const nSpark = mobile ? 700 : 2200;
-    const nP = nDisk + nHalo + nJet + nSpark;
+    const nDisk = mobile ? 8000 : 20000;
+    const nGal  = mobile ? 4000 : 14000;
+    const nInner = mobile ? 1800 : 6000;
+    const nP = nDisk + nGal + nInner;
     const pData = new Float32Array(nP * 4);
     const pCol = new Float32Array(nP * 3);
     let pi = 0;
@@ -776,24 +754,28 @@
       pCol[i*3] = col[0]; pCol[i*3+1] = col[1]; pCol[i*3+2] = col[2];
     }
     for (let i = 0; i < nDisk; i++) {
-      const r = 3.2 + Math.pow(Math.random(), 0.55) * 12.5;
-      const y = (Math.random() - 0.5) * (0.05 + 0.18 / (r * 0.2));
-      const t = Math.max(0, 1 - (r - 3.2) / 12);
+      const r = 3.15 + Math.pow(Math.random(), 0.55) * 12.2;
+      const y = (Math.random() - 0.5) * (0.04 + 0.14 / (r * 0.22));
+      const t = Math.max(0, 1 - (r - 3.15) / 12);
       pushP(r, y, Math.random() * 6.283, 0, [
-        0.55 + 0.7 * t, 0.18 + 0.45 * t, 0.06 + 0.22 * t
+        0.62 + 0.45 * t, 0.22 + 0.38 * t, 0.07 + 0.12 * t
       ]);
     }
-    for (let i = 0; i < nHalo; i++) {
-      const r = 8 + Math.pow(Math.random(), 0.7) * 12;
-      const y = (Math.random() - 0.5) * 1.1;
-      pushP(r, y, Math.random() * 6.283, 1, [0.55, 0.42, 0.62]);
+    for (let i = 0; i < nGal; i++) {
+      const arm = i % 3;
+      const r = 18 + Math.pow(Math.random(), 0.45) * 42;
+      const a = arm * 2.094 + r * 0.32 + (Math.random() - 0.5) * 0.55;
+      const y = (Math.random() - 0.5) * (0.7 + r * 0.035);
+      const t = Math.exp(-Math.abs(y) * 0.35);
+      pushP(r, y, a, 1, [0.55 * t, 0.32 * t, 0.16 * t]);
     }
-    for (let i = 0; i < nJet; i++) {
-      pushP(0.4 + Math.random() * 0.3, 0, Math.random() * 6.283, 2, [0.45, 0.7, 1.15]);
-    }
-    for (let i = 0; i < nSpark; i++) {
-      const r = 3.4 + Math.random() * 8;
-      pushP(r, (Math.random() - 0.5) * 0.2, Math.random() * 6.283, 0.8, [1.1, 0.75, 0.35]);
+    for (let i = 0; i < nInner; i++) {
+      const r = 1.55 + Math.pow(Math.random(), 0.7) * 2.4;
+      const y = (Math.random() - 0.5) * 0.08;
+      const t = Math.max(0, 1 - (r - 1.55) / 2.4);
+      pushP(r, y, Math.random() * 6.283, 2, [
+        0.85 + 0.4 * t, 0.38 + 0.28 * t, 0.12
+      ]);
     }
     const pBuf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pBuf);
@@ -811,44 +793,50 @@
     gl.vertexAttribPointer(progPt.a.aCol, 3, gl.FLOAT, false, 0, 0);
     gl.bindVertexArray(null);
 
-    function prismMesh() {
-      const z = 0.62, r = 1;
-      const v = [];
-      for (let k = 0; k < 2; k++) {
-        const zz = k ? z : -z;
-        for (let i = 0; i < 3; i++) {
-          const a = i * Math.PI * 2 / 3 + Math.PI / 2;
-          v.push([Math.cos(a) * r, Math.sin(a) * r, zz]);
+    function sphereMesh(lat, lon) {
+      const verts = [];
+      for (let y = 0; y <= lat; y++) {
+        const phi = y / lat * Math.PI;
+        for (let x = 0; x <= lon; x++) {
+          const th = x / lon * Math.PI * 2;
+          const px = Math.sin(phi) * Math.cos(th);
+          const py = Math.cos(phi);
+          const pz = Math.sin(phi) * Math.sin(th);
+          verts.push([px, py, pz]);
         }
       }
-      const idx = [0,1,2, 3,5,4, 0,3,4, 0,4,1, 1,4,5, 1,5,2, 2,5,3, 2,3,0];
       const pos = [], nrm = [];
-      for (let i = 0; i < idx.length; i += 3) {
-        const A = v[idx[i]], B = v[idx[i+1]], C = v[idx[i+2]];
-        const ab = [B[0]-A[0], B[1]-A[1], B[2]-A[2]];
-        const ac = [C[0]-A[0], C[1]-A[1], C[2]-A[2]];
-        let nx = ab[1]*ac[2]-ab[2]*ac[1], ny = ab[2]*ac[0]-ab[0]*ac[2], nz = ab[0]*ac[1]-ab[1]*ac[0];
-        const l = Math.hypot(nx, ny, nz) || 1;
-        nx /= l; ny /= l; nz /= l;
-        for (const P of [A, B, C]) { pos.push(...P); nrm.push(nx, ny, nz); }
+      const cols = lon + 1;
+      for (let y = 0; y < lat; y++) {
+        for (let x = 0; x < lon; x++) {
+          const a = verts[y * cols + x], b = verts[(y + 1) * cols + x];
+          const c = verts[y * cols + x + 1], d = verts[(y + 1) * cols + x + 1];
+          for (const P of [a, b, c, c, b, d]) {
+            pos.push(...P);
+            nrm.push(...P);
+          }
+        }
       }
-      return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), count: idx.length };
+      return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), count: pos.length / 3 };
     }
-    const mesh = prismMesh();
-    const nPrism = mobile ? 140 : 420;
+    const mesh = sphereMesh(mobile ? 10 : 14, mobile ? 16 : 22);
+    const worldR = mobile
+      ? [4.6, 6.4, 9.2, 13.5, 19, 28, 38, 52]
+      : [3.9, 5.2, 6.8, 9.1, 12.4, 16.8, 22.5, 29, 38, 48, 58, 8.3, 11.2, 18.6];
+    const nPrism = worldR.length;
     const instA = new Float32Array(nPrism * 4);
     const instB = new Float32Array(nPrism * 4);
     for (let i = 0; i < nPrism; i++) {
-      const large = i < (mobile ? 8 : 18);
-      const r = large ? (7 + Math.random() * 5) : (6.2 + Math.pow(Math.random(), 0.65) * 11);
+      const r = worldR[i];
+      const inner = r < 8;
       instA[i*4] = r;
-      instA[i*4+1] = Math.random() * 6.283;
-      instA[i*4+2] = (Math.random() - 0.5) * (large ? 1.4 : 0.35 + r * 0.06);
-      instA[i*4+3] = large ? (0.22 + Math.random() * 0.18) : (0.045 + Math.random() * 0.09);
-      instB[i*4] = 0.4 + Math.random() * 1.6;
-      instB[i*4+1] = (Math.random() - 0.5) * 0.9;
-      instB[i*4+2] = Math.random();
-      instB[i*4+3] = Math.random();
+      instA[i*4+1] = i * 1.7 + 0.4;
+      instA[i*4+2] = (i % 2 ? 0.18 : -0.14) * (inner ? 0.4 : 1);
+      instA[i*4+3] = inner ? (0.07 + (i % 3) * 0.025) : (0.13 + (i % 5) * 0.035);
+      instB[i*4] = 0.25 + (i % 7) * 0.11;
+      instB[i*4+1] = (i % 2 ? 0.22 : -0.18);
+      instB[i*4+2] = (i * 0.17) % 1;
+      instB[i*4+3] = i;
     }
     const prismPosBuf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, prismPosBuf);
@@ -890,7 +878,7 @@
     gl.vertexAttribPointer(progInfall.a.aPos, 3, gl.FLOAT, false, 0, 0);
     gl.bindVertexArray(null);
 
-    function makeTarget(w, h, hdr) {
+    function makeTarget(w, h, hdr, depth) {
       const tex = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, tex);
       const intern = hdr && canHDR ? gl.RGBA16F : gl.RGBA8;
@@ -903,10 +891,16 @@
       const fbo = gl.createFramebuffer();
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      if (depth) {
+        const rb = gl.createRenderbuffer();
+        gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
+      }
       const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       if (!ok) {
-        if (hdr) return makeTarget(w, h, false);
+        if (hdr) return makeTarget(w, h, false, depth);
         throw new Error("FBO failed");
       }
       return { tex, fbo, w, h };
@@ -927,7 +921,7 @@
       rtW = w; rtH = h;
       bloomW = Math.max(2, w >> 1);
       bloomH = Math.max(2, h >> 1);
-      scene = makeTarget(w, h, true);
+      scene = makeTarget(w, h, true, true);
       bright = makeTarget(bloomW, bloomH, true);
       blurA = makeTarget(bloomW, bloomH, true);
       blurB = makeTarget(bloomW, bloomH, true);
@@ -992,10 +986,13 @@
       return { pos, fwd, right, up };
     }
 
+    const DIST_MIN = 2.32;
+    const DIST_MAX = 68;
+    const qDist = parseFloat(new URLSearchParams(location.search).get("dist") || "");
     const cam = {
       yaw: 0.55,
       pitch: 0.38,
-      dist: reduced ? 16.4 : 34,
+      dist: Number.isFinite(qDist) ? Math.max(DIST_MIN, Math.min(DIST_MAX, qDist)) : (reduced ? 16.4 : 26),
       vy: 0, vp: 0, vd: 0,
       auto: true
     };
@@ -1022,7 +1019,8 @@
     canvas.addEventListener("wheel", (e) => {
       e.preventDefault();
       cam.auto = false;
-      cam.vd += e.deltaY * 0.012;
+      const mag = Math.min(Math.abs(e.deltaY), 90);
+      cam.vd += Math.sign(e.deltaY) * mag * 0.018;
     }, { passive: false });
     canvas.addEventListener("touchstart", (e) => {
       if (e.touches.length === 2) {
@@ -1039,7 +1037,7 @@
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
-        cam.dist = Math.max(5.5, Math.min(42, cam.dist - (d - pinch) * 0.02));
+        cam.dist = Math.max(DIST_MIN, Math.min(DIST_MAX, cam.dist * Math.exp(-(d - pinch) * 0.012)));
         pinch = d;
       }
     }, { passive: false });
@@ -1160,7 +1158,7 @@
     document.getElementById("pc").textContent = nP.toLocaleString();
     document.getElementById("pr").textContent = String(nPrism);
     if (mobile) {
-      document.getElementById("hint").textContent = "Drag to orbit · pinch to approach · tap to drop mass";
+      document.getElementById("hint").textContent = "Drag to orbit · pinch to descend · tap to drop mass";
     }
 
     const t0 = performance.now();
@@ -1189,15 +1187,13 @@
       if (!reduced) {
         const k = Math.min(t / 3.8, 1);
         const e = 1 - Math.pow(1 - k, 3);
-        if (t < 4.2) cam.dist += (16.4 - cam.dist) * (0.6 * dt + 0.015);
+        if (t < 4.2 && !Number.isFinite(qDist)) cam.dist += (16.4 - cam.dist) * (0.6 * dt + 0.015);
         exposure = Math.min(1, Math.max(0, (t - 0.35) / 2.4));
         if (t > 2.4) document.getElementById("hud").classList.add("on");
-        if (t > 2.1) document.getElementById("mark").classList.add("out");
         if (t > 2.6) document.body.classList.add("live");
       } else {
         exposure = 1;
         document.getElementById("hud").classList.add("on");
-        document.getElementById("mark").classList.add("out");
         document.body.classList.add("live");
       }
 
@@ -1205,7 +1201,8 @@
       cam.vy *= 0.9; cam.vp *= 0.9; cam.vd *= 0.86;
       cam.yaw += cam.vy;
       cam.pitch = Math.max(-1.15, Math.min(1.22, cam.pitch + cam.vp));
-      cam.dist = Math.max(5.4, Math.min(44, cam.dist + cam.vd * dt * 12));
+      cam.dist *= Math.exp(cam.vd * dt * 0.85);
+      cam.dist = Math.max(DIST_MIN, Math.min(DIST_MAX, cam.dist));
 
       pulse += dt * 2.15;
       pulseAmp *= Math.pow(0.22, dt);
@@ -1214,8 +1211,8 @@
 
       const b = basis(cam.yaw, cam.pitch, cam.dist);
       const aspect = rtW / rtH;
-      const fov = 0.55;
-      const P = perspective(2 * Math.atan(fov), aspect, 0.12, 80);
+      const fov = 0.55 - 0.12 * Math.max(0, Math.min(1, (12 - cam.dist) / 9));
+      const P = perspective(2 * Math.atan(fov), aspect, 0.08, 220);
       const V = lookAt(b.pos[0], b.pos[1], b.pos[2]);
       const MVP = mul4(P, V);
 
@@ -1269,8 +1266,22 @@
       gl.uniform1f(progBH.u.uPulse, pulse);
       gl.uniform1f(progBH.u.uPulseAmp, pulseAmp);
       gl.uniform1f(progBH.u.uSteps, steps);
+      gl.uniform1f(progBH.u.uCamDist, cam.dist);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LESS);
+      gl.depthMask(true);
+      gl.disable(gl.BLEND);
+      gl.useProgram(progPrism.p);
+      gl.bindVertexArray(vaoPrism);
+      gl.uniformMatrix4fv(progPrism.u.uMVP, false, MVP);
+      gl.uniform1f(progPrism.u.uTime, t);
+      gl.uniform3f(progPrism.u.uCamPos, b.pos[0], b.pos[1], b.pos[2]);
+      gl.uniform1f(progPrism.u.uPulseAmp, pulseAmp);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, mesh.count, nPrism);
+
+      gl.depthMask(false);
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE);
       gl.useProgram(progPt.p);
@@ -1282,6 +1293,7 @@
       gl.uniform3f(progPt.u.uMass, mass[0], mass[1], mass[2]);
       gl.uniform1f(progPt.u.uMassG, massG);
       gl.uniform1f(progPt.u.uPoint, Math.max(canvas.height / 900, 0.7));
+      gl.uniform1f(progPt.u.uCamDist, cam.dist);
       gl.drawArrays(gl.POINTS, 0, nP);
 
       if (infalls.length) {
@@ -1299,17 +1311,7 @@
         gl.uniform1f(progInfall.u.uPoint, Math.max(canvas.height / 800, 0.8));
         gl.drawArrays(gl.POINTS, 0, infalls.length);
       }
-
-      gl.enable(gl.DEPTH_TEST);
-      gl.depthFunc(gl.LEQUAL);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      gl.useProgram(progPrism.p);
-      gl.bindVertexArray(vaoPrism);
-      gl.uniformMatrix4fv(progPrism.u.uMVP, false, MVP);
-      gl.uniform1f(progPrism.u.uTime, t);
-      gl.uniform3f(progPrism.u.uCamPos, b.pos[0], b.pos[1], b.pos[2]);
-      gl.uniform1f(progPrism.u.uPulseAmp, pulseAmp);
-      gl.drawArraysInstanced(gl.TRIANGLES, 0, mesh.count, nPrism);
+      gl.depthMask(true);
       gl.disable(gl.DEPTH_TEST);
       gl.disable(gl.BLEND);
 
@@ -1368,13 +1370,15 @@
         document.getElementById("tau").innerHTML =
           String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0") + ".<span>" + String(cc).padStart(2, "0") + "</span>";
         document.getElementById("rad").textContent = cam.dist.toFixed(2) + " Rs";
-        const z = 1 / Math.sqrt(Math.max(0.05, 1 - 1 / cam.dist)) - 1;
+        const z = 1 / Math.sqrt(Math.max(0.05, 1 - 1 / Math.max(cam.dist, 1.05))) - 1;
         document.getElementById("zed").textContent = z.toFixed(3);
+        const layerEl = document.getElementById("layer");
+        layerEl.textContent = cam.dist > 28 ? "DEEP FIELD" : cam.dist > 14 ? "THE WELL" : cam.dist > 8 ? "PHOTON SPHERE" : cam.dist > 4.6 ? "THE THROAT" : "INNER COSMOS";
+        if (filterNode && ac) {
+          filterNode.frequency.value = 180 + cam.dist * 8 + pulseAmp * 280 + Math.sin(t * 0.35) * 30;
+        }
         if (fps < 36 && steps > 28) { steps -= 4; if (!mobile && renderScale > 0.45) { renderScale *= 0.92; resizeRT(); } }
         else if (fps > 56 && steps < stepsTarget) steps += 2;
-        if (filterNode && ac) {
-          filterNode.frequency.value = 280 + pulseAmp * 420 + Math.sin(t * 0.35) * 40;
-        }
       }
       if (analyser && waveData) {
         analyser.getByteFrequencyData(waveData);
