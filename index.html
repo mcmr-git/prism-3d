@@ -223,7 +223,8 @@
         <b id="tau">00:00.<span>00</span></b>
         <div style="margin-top:14px">Radius <b id="rad" style="font-size:13px;margin-top:4px">16.2 Rs</b></div>
         <div style="margin-top:10px">Redshift z <b id="zed" style="font-size:13px;margin-top:4px">0.032</b></div>
-        <div style="margin-top:10px">Layer <b id="layer" style="font-size:13px;margin-top:4px">THE WELL</b></div>
+        <div style="margin-top:10px">Tier <b id="layer" style="font-size:12px;margin-top:4px;max-width:22em;line-height:1.35;letter-spacing:0.08em">Laniakea Filament Web</b></div>
+        <div style="margin-top:10px">Scale <b id="scale" style="font-size:13px;margin-top:4px">10²⁶ m</b></div>
       </div>
     </div>
     <div class="bottom">
@@ -244,6 +245,109 @@
     </div>
   </div>
   <div id="fail"></div>
+  <script id="prism-core">
+  var PRISM = (function () {
+    var TIERS = [
+      { id: 1, name: "Laniakea Filament Web", exp: 26, band: "cosmic" },
+      { id: 2, name: "Galaxy Cluster & Dark Matter Halo", exp: 24, band: "cosmic" },
+      { id: 3, name: "Spiral Galaxy Core & Stellar Arms", exp: 21, band: "cosmic" },
+      { id: 4, name: "Nebular Stellar Nursery", exp: 18, band: "cosmic" },
+      { id: 5, name: "Star System & Oort Cloud", exp: 15, band: "cosmic" },
+      { id: 6, name: "Gas Giant with Ring System & Aurora", exp: 12, band: "cosmic" },
+      { id: 7, name: "Terrestrial Biosphere Planet", exp: 7, band: "planetary" },
+      { id: 8, name: "Megacity / Geodesic Architectural Sprawl", exp: 5, band: "planetary" },
+      { id: 9, name: "Crystalline Monolith / Surface Micro-geometry", exp: 2, band: "planetary" },
+      { id: 10, name: "Organic Cellular Membrane & Cytoplasm", exp: -4, band: "crystalline" },
+      { id: 11, name: "DNA Double Helix & Ribosome Motors", exp: -8, band: "crystalline" },
+      { id: 12, name: "Molecular Lattice & Electron Density Clouds", exp: -10, band: "crystalline" },
+      { id: 13, name: "Atomic Shell & Probability Orbitals (s, p, d, f)", exp: -11, band: "crystalline" },
+      { id: 14, name: "Nucleon Core (Protons / Neutrons)", exp: -15, band: "nuclear" },
+      { id: 15, name: "Quark-Gluon Plasma & Color Charge Flux", exp: -18, band: "nuclear" },
+      { id: 16, name: "Electroweak Symmetry Breaking Lattice", exp: -22, band: "nuclear" },
+      { id: 17, name: "Grand Unified Theory String Vibrations", exp: -30, band: "planck" },
+      { id: 18, name: "Quantum Foam / Spacetime Topology Fluctuations", exp: -35, band: "planck" },
+      { id: 19, name: "Event Horizon Throat & Wormhole Bridge", exp: 3, band: "horizon" },
+      { id: 20, name: "Genesis Bang / New Multiverse Rebirth", exp: -36, band: "bang" }
+    ];
+    function wrapUnit(x, n) {
+      var y = x % n;
+      if (y < 0) y += n;
+      if (y >= n) y = 0;
+      return y;
+    }
+    function wrapDescent(d) {
+      return wrapUnit(d - 1, 20);
+    }
+    function mapDescent(d) {
+      var x = wrapDescent(d);
+      var i0 = Math.floor(x + 1e-15);
+      if (i0 >= 20) i0 = 0;
+      var blend = x - i0;
+      if (blend < 0) blend = 0;
+      if (blend > 1) blend = 1;
+      var i1 = (i0 + 1) % 20;
+      var a = TIERS[i0];
+      var b = TIERS[i1];
+      var meters = Math.pow(10, a.exp + (b.exp - a.exp) * blend);
+      return {
+        unit: x,
+        tierIndex: a.id,
+        nextIndex: b.id,
+        blend: blend,
+        name: a.name,
+        nextName: b.name,
+        exp: a.exp + (b.exp - a.exp) * blend,
+        meters: meters,
+        band: blend > 0.5 ? b.band : a.band
+      };
+    }
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function audioForDescent(d) {
+      var m = mapDescent(d);
+      var t0 = m.tierIndex;
+      var t1 = m.nextIndex;
+      function curve(id) {
+        if (id <= 6) return { subHz: 28 + id * 1.4, droneHz: 55, fmHz: 140, fmGain: 0.004, droneGain: 0.22, noiseGain: 0.018, filterHz: 260, band: "cosmic" };
+        if (id <= 9) return { subHz: 40, droneHz: 72, fmHz: 210, fmGain: 0.012, droneGain: 0.14, noiseGain: 0.025, filterHz: 340, band: "planetary" };
+        if (id <= 13) return { subHz: 68, droneHz: 196, fmHz: 520, fmGain: 0.07, droneGain: 0.055, noiseGain: 0.03, filterHz: 920, band: "crystalline" };
+        if (id <= 16) return { subHz: 84, droneHz: 330, fmHz: 880, fmGain: 0.05, droneGain: 0.07, noiseGain: 0.045, filterHz: 1400, band: "nuclear" };
+        if (id <= 18) return { subHz: 48, droneHz: 110, fmHz: 2400, fmGain: 0.03, droneGain: 0.035, noiseGain: 0.14, filterHz: 2800, band: "planck" };
+        if (id === 19) return { subHz: 32, droneHz: 64, fmHz: 180, fmGain: 0.008, droneGain: 0.2, noiseGain: 0.04, filterHz: 220, band: "horizon" };
+        return { subHz: 22, droneHz: 90, fmHz: 1600, fmGain: 0.04, droneGain: 0.16, noiseGain: 0.11, filterHz: 1800, band: "bang" };
+      }
+      var A = curve(t0);
+      var B = curve(t1);
+      var t = m.blend;
+      return {
+        subHz: lerp(A.subHz, B.subHz, t),
+        droneHz: lerp(A.droneHz, B.droneHz, t),
+        fmHz: lerp(A.fmHz, B.fmHz, t),
+        fmGain: lerp(A.fmGain, B.fmGain, t),
+        droneGain: lerp(A.droneGain, B.droneGain, t),
+        noiseGain: lerp(A.noiseGain, B.noiseGain, t),
+        filterHz: lerp(A.filterHz, B.filterHz, t),
+        band: t > 0.5 ? B.band : A.band,
+        tierIndex: m.tierIndex,
+        blend: m.blend
+      };
+    }
+    function distForZoom(d) {
+      var x = wrapDescent(d);
+      var u = x / 19.0;
+      if (x >= 19) return 2.55;
+      return 2.42 + 72.0 * Math.pow(1.0 - Math.min(x / 18.2, 1), 1.35);
+    }
+    return {
+      TIERS: TIERS,
+      wrapDescent: wrapDescent,
+      mapDescent: mapDescent,
+      audioForDescent: audioForDescent,
+      distForZoom: distForZoom
+    };
+  })();
+  if (typeof window !== "undefined") window.PRISM = PRISM;
+  if (typeof module !== "undefined" && module.exports) module.exports = PRISM;
+  </script>
   <script>
   (() => {
     const canvas = document.getElementById("c");
@@ -324,7 +428,7 @@
     out vec4 fragColor;
     uniform vec2 uRes;
     uniform vec3 uCamPos, uCamFwd, uCamRight, uCamUp;
-    uniform float uTime, uFov, uExposure, uPulse, uPulseAmp, uSteps, uCamDist, uFall;
+    uniform float uTime, uFov, uExposure, uPulse, uPulseAmp, uSteps, uCamDist, uFall, uDescent;
 
     vec3 hsv2rgb(vec3 c){
       vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
@@ -406,80 +510,184 @@
       vec3 rock = mix(albedo * 0.4, albedo, crater);
       return rock * (0.06 + ndl * 0.95) * Lc * 1.5 + Lc * fres * 0.38;
     }
-    vec3 realmSky(vec3 dir, float fall){
-      float oct = floor(max(fall, 0.0));
-      float f = fract(max(fall, 0.0));
-      float id = mod(oct, 6.0);
-      float a = oct * 1.173 + 0.37;
-      float ca = cos(a), sa = sin(a);
-      vec3 d = vec3(ca * dir.x + sa * dir.z, dir.y, -sa * dir.x + ca * dir.z);
-      float zoom = exp(f * 2.15);
-      vec3 z = normalize(vec3(d.x / zoom, d.y / zoom, d.z));
-      vec3 L = normalize(vec3(0.25, 0.55, 0.7));
-      vec3 gold = vec3(1.0, 0.72, 0.36);
-      vec3 col = vec3(0.0);
-      vec3 p;
-      if (id < 0.5){
-        col = starfield(z) * 1.5 + galaxyBand(z, oct) * 3.0 + distantGalaxies(z) * 1.0;
-        col += gold * exp(-abs(length(z.xy) - 0.17) * 24.0) * 1.15;
-        p = hitPlanet(z, vec3(0.42, 0.08, 0.95), 0.13, vec3(0.16, 0.12, 0.09), L, gold);
-        if (p.x > -0.5) col = p;
-        p = hitPlanet(z, vec3(-0.55, -0.18, 1.05), 0.07, vec3(0.12, 0.1, 0.1), L, gold);
-        if (p.x > -0.5) col = p;
-      } else if (id < 1.5){
-        col = vec3(0.05, 0.018, 0.008) + galaxyBand(z, oct + 3.1) * 5.2;
-        col += vec3(1.05, 0.42, 0.1) * pow(max(z.y * 0.35 + 0.25, 0.0), 2.4) * 0.35;
-        for (int i = 0; i < 8; i++){
-          float fi = float(i);
-          vec3 c = vec3(hash13(vec3(fi, oct, 1.2)) - 0.5, hash13(vec3(fi, oct, 2.8)) - 0.5, 0.55 + hash13(vec3(fi, oct, 4.1)) * 0.6);
-          c = normalize(c) * (0.75 + hash13(vec3(fi, oct, 6.0)) * 0.5);
-          p = hitPlanet(z, c, 0.028 + hash13(vec3(fi, oct, 9.0)) * 0.05, vec3(0.2, 0.09, 0.04), L, vec3(1.15, 0.52, 0.18));
-          if (p.x > -0.5) col = p;
-        }
-      } else if (id < 2.5){
-        col = starfield(z) * 0.4 + vec3(0.018, 0.022, 0.035);
-        vec3 host = vec3(0.04, -0.14, 0.82);
-        p = hitPlanet(z, host, 0.46, vec3(0.24, 0.17, 0.12), L, gold * 1.15);
-        if (p.x > -0.5) col = p;
-        float ang = 1.0 - clamp(dot(normalize(host), z), -1.0, 1.0);
-        col += gold * exp(-ang * 28.0) * 0.18;
-        col += vec3(1.0, 0.8, 0.55) * exp(-ang * 8.0) * 0.05;
-        float ring = abs(dot(z, vec3(0.0, 1.0, 0.0)));
-        float rr = length(z.xz);
-        col += gold * exp(-abs(rr - 0.72) * 40.0) * smoothstep(0.12, 0.02, ring) * 0.45;
-      } else if (id < 3.5){
-        col = starfield(z) * 0.7 + vec3(0.01, 0.01, 0.02);
-        vec3 w1 = normalize(vec3(0.34, 0.06, 1.0));
-        vec3 w2 = normalize(vec3(-0.38, -0.1, 1.0));
-        float a1 = 1.0 - clamp(dot(z, w1), -1.0, 1.0);
-        float a2 = 1.0 - clamp(dot(z, w2), -1.0, 1.0);
-        col *= 1.0 - exp(-a1 * 90.0) * 0.92 - exp(-a2 * 90.0) * 0.92;
-        col += gold * exp(-abs(a1 - 0.018) * 110.0) * 1.5;
-        col += gold * exp(-abs(a2 - 0.018) * 110.0) * 1.5;
-        p = hitPlanet(z, vec3(0.0, 0.42, 1.1), 0.08, vec3(0.14, 0.11, 0.1), L, gold);
-        if (p.x > -0.5) col = p;
-      } else if (id < 4.5){
-        col = starfield(z) * 0.22 + vec3(0.004, 0.005, 0.01);
-        col += distantGalaxies(z) * 0.28;
-        p = hitPlanet(z, vec3(0.48, 0.12, 1.55), 0.055, vec3(0.2, 0.18, 0.16), L, vec3(0.7, 0.78, 0.95));
-        if (p.x > -0.5) col = p;
-      } else {
-        vec3 ice = vec3(0.5, 0.76, 1.0);
-        col = starfield(z) * 1.15 + ice * exp(-z.y * z.y * 4.0) * 0.07;
-        col += vec3(0.15, 0.28, 0.42) * galaxyBand(z, oct + 8.0) * 0.9;
-        for (int i = 0; i < 5; i++){
-          float fi = float(i);
-          vec3 c = normalize(vec3(hash13(vec3(fi, oct, 4.4)) - 0.5, hash13(vec3(fi, oct, 7.1)) - 0.5, 0.65));
-          p = hitPlanet(z, c * 1.15, 0.07 + hash13(vec3(fi, oct, 1.0)) * 0.06, vec3(0.5, 0.6, 0.7), L, ice);
-          if (p.x > -0.5) col = p;
-        }
+    float fbm(vec3 p){
+      float a = 0.5, s = 0.0;
+      for (int i = 0; i < 4; i++){
+        s += a * hash13(floor(p) + fract(p.yzx * 13.1));
+        p = p * 2.03 + 0.17;
+        a *= 0.5;
+      }
+      return s;
+    }
+    vec3 tLaniakea(vec3 d){
+      vec3 col = vec3(0.01, 0.012, 0.03) + starfield(d) * 0.55;
+      float web = 0.0;
+      for (int i = 0; i < 5; i++){
+        vec3 n = normalize(vec3(hash13(vec3(float(i), 1.2, 3.3)) - 0.5, hash13(vec3(float(i), 4.1, 0.2)) - 0.5, hash13(vec3(float(i), 7.7, 2.0)) - 0.5));
+        web += exp(-abs(dot(d, n)) * 18.0) * (0.4 + 0.6 * fbm(d * 8.0 + float(i)));
+      }
+      return col + vec3(0.55, 0.35, 0.85) * web * 0.55 + distantGalaxies(d) * 1.4;
+    }
+    vec3 tCluster(vec3 d){
+      vec3 col = starfield(d) * 0.8 + vec3(0.02, 0.02, 0.05);
+      col += distantGalaxies(d) * 2.2;
+      col += vec3(0.12, 0.08, 0.2) * exp(-abs(d.y) * 3.0) * 0.4;
+      return col;
+    }
+    vec3 tSpiral(vec3 d){
+      return starfield(d) * 1.1 + galaxyBand(d, 0.2) * 4.2 + distantGalaxies(d) * 0.6;
+    }
+    vec3 tNebula(vec3 d){
+      float n = fbm(d * 6.0);
+      vec3 a = vec3(0.7, 0.15, 0.45);
+      vec3 b = vec3(0.15, 0.35, 0.8);
+      return starfield(d) * 0.7 + mix(a, b, n) * n * 0.85;
+    }
+    vec3 tOort(vec3 d){
+      vec3 col = starfield(d) * 1.3;
+      float sun = pow(max(dot(d, normalize(vec3(0.2, 0.15, 1.0))), 0.0), 80.0);
+      col += vec3(1.2, 0.95, 0.6) * sun * 2.2;
+      col += vec3(0.4, 0.35, 0.3) * exp(-abs(length(d.xy) - 0.7) * 8.0) * 0.2;
+      return col;
+    }
+    vec3 tGiant(vec3 d){
+      vec3 L = normalize(vec3(0.3, 0.5, 0.7));
+      vec3 p = hitPlanet(d, vec3(0.0, -0.05, 0.85), 0.42, vec3(0.7, 0.45, 0.2), L, vec3(1.0, 0.8, 0.5));
+      vec3 col = starfield(d) * 0.5;
+      if (p.x > -0.5) col = p;
+      float ring = abs(d.y);
+      col += vec3(0.9, 0.7, 0.4) * exp(-abs(length(d.xz) - 0.7) * 30.0) * smoothstep(0.12, 0.02, ring) * 0.7;
+      col += vec3(0.3, 0.8, 1.0) * pow(max(d.y, 0.0), 6.0) * 0.35;
+      return col;
+    }
+    vec3 tTerra(vec3 d){
+      vec3 L = normalize(vec3(0.4, 0.6, 0.5));
+      vec3 p = hitPlanet(d, vec3(0.05, -0.08, 0.8), 0.4, vec3(0.15, 0.35, 0.7), L, vec3(1.0, 0.95, 0.8));
+      vec3 col = starfield(d) * 0.4;
+      if (p.x > -0.5){
+        col = p;
+        col += vec3(0.2, 0.55, 0.15) * max(0.0, p.y) * 0.15;
+      }
+      col += vec3(0.4, 0.7, 1.0) * pow(1.0 - abs(dot(d, normalize(vec3(0.05, -0.08, 0.8)))), 8.0) * 0.12;
+      return col;
+    }
+    vec3 tCity(vec3 d){
+      vec3 col = vec3(0.02, 0.02, 0.03);
+      vec2 g = d.xz * 18.0;
+      float grid = exp(-abs(sin(g.x * 3.1415) * sin(g.y * 3.1415)) * 12.0);
+      col += vec3(1.0, 0.75, 0.35) * grid * smoothstep(0.15, -0.05, d.y) * 0.45;
+      col += vec3(0.3, 0.5, 1.0) * pow(hash13(floor(vec3(g, 2.0))), 8.0) * 0.6;
+      return col + starfield(d) * 0.25;
+    }
+    vec3 tCrystal(vec3 d){
+      float v = hash13(floor(d * 7.0));
+      vec3 facet = vec3(0.7, 0.85, 1.0) * pow(abs(dot(d, normalize(vec3(v, 0.4, 0.7)))), 4.0);
+      return vec3(0.05, 0.06, 0.08) + facet * 0.8 + starfield(d) * 0.2;
+    }
+    vec3 tCell(vec3 d){
+      float r = length(d.xy);
+      float mem = exp(-abs(r - 0.55) * 18.0);
+      float org = exp(-length(d.xy - vec2(0.15, 0.1)) * 12.0) + exp(-length(d.xy + vec2(0.2, -0.05)) * 10.0);
+      return vec3(0.15, 0.04, 0.06) + vec3(0.9, 0.25, 0.35) * mem * 0.8 + vec3(1.0, 0.5, 0.2) * org * 0.5;
+    }
+    vec3 tDNA(vec3 d){
+      float a = atan(d.x, d.z) + d.y * 12.0;
+      float helix = exp(-abs(length(d.xz) - 0.22 - 0.06 * sin(a)) * 22.0);
+      float rung = exp(-abs(sin(d.y * 28.0)) * 8.0) * exp(-abs(d.x) * 6.0);
+      return vec3(0.03, 0.05, 0.08) + vec3(0.4, 0.9, 0.7) * helix * 0.9 + vec3(0.95, 0.8, 0.2) * rung * 0.35;
+    }
+    vec3 tMolecule(vec3 d){
+      vec3 col = vec3(0.02, 0.03, 0.05);
+      for (int i = 0; i < 6; i++){
+        vec3 c = normalize(vec3(hash13(vec3(float(i), 1.0, 2.0)) - 0.5, hash13(vec3(float(i), 3.0, 4.0)) - 0.5, 0.6));
+        col += vec3(0.4, 0.7, 1.0) * exp(-length(d - c) * 18.0) * 0.7;
       }
       return col;
     }
-    vec3 innerCosmos(vec3 dir, float fall){
-      vec3 a = realmSky(dir, fall);
-      vec3 b = realmSky(dir, floor(max(fall, 0.0)) + 1.001);
-      return mix(a, b, smoothstep(0.78, 1.0, fract(max(fall, 0.0))));
+    vec3 tOrbitals(vec3 d){
+      float Y10 = d.y;
+      float Y11 = d.x;
+      float Y20 = 1.5 * d.y * d.y - 0.5;
+      float Y22 = d.x * d.x - d.z * d.z;
+      float lobe = abs(Y10) * 0.45 + abs(Y20) * 0.35 + abs(Y22) * 0.25 + abs(Y11 * d.z) * 0.3;
+      vec3 col = vec3(0.02, 0.04, 0.08) + vec3(0.35, 0.7, 1.0) * pow(lobe, 1.6) * 0.85;
+      col += vec3(1.0, 0.4, 0.2) * pow(abs(Y10), 4.0) * 0.35;
+      return col + starfield(d) * 0.15;
+    }
+    vec3 tNucleon(vec3 d){
+      vec3 p1 = vec3(0.12, 0.0, 0.7);
+      vec3 p2 = vec3(-0.12, 0.04, 0.72);
+      float a = exp(-length(d - p1) * 10.0);
+      float b = exp(-length(d - p2) * 10.0);
+      return vec3(0.05, 0.02, 0.04) + vec3(1.0, 0.25, 0.2) * a + vec3(0.2, 0.4, 1.0) * b;
+    }
+    vec3 tQGP(vec3 d){
+      float n = fbm(d * 14.0 + uTime * 0.4);
+      vec3 rgb = hsv2rgb(vec3(fract(n * 1.7 + uTime * 0.05), 0.75, 0.9));
+      return rgb * n * 0.7 + vec3(0.08, 0.02, 0.04);
+    }
+    vec3 tElectroweak(vec3 d){
+      vec3 g = abs(sin(d * 18.0));
+      float lat = exp(-min(min(g.x, g.y), g.z) * 16.0);
+      return vec3(0.04, 0.05, 0.1) + vec3(0.6, 0.8, 1.0) * lat * 0.55 + vec3(1.0, 0.5, 0.2) * lat * lat * 0.3;
+    }
+    vec3 tStrings(vec3 d){
+      float s = 0.0;
+      for (int i = 0; i < 6; i++){
+        float ph = uTime * (1.2 + float(i) * 0.17) + float(i);
+        s += exp(-abs(d.y - 0.15 * sin(d.x * 12.0 + ph)) * 20.0) * exp(-abs(d.z - 0.1 * sin(ph * 1.3)) * 8.0);
+      }
+      return vec3(0.03, 0.02, 0.06) + vec3(1.0, 0.85, 0.5) * s * 0.65;
+    }
+    vec3 tFoam(vec3 d){
+      float n = fbm(d * 22.0 + uTime * 0.8);
+      float holes = smoothstep(0.45, 0.7, n);
+      return mix(vec3(0.01, 0.01, 0.02), vec3(0.5, 0.7, 1.0) * n, holes) + starfield(d) * 0.2;
+    }
+    vec3 tHorizon(vec3 d){
+      vec3 gold = vec3(1.0, 0.72, 0.36);
+      vec3 col = starfield(d) * 0.9 + galaxyBand(d, 1.1) * 1.2;
+      col += gold * exp(-abs(length(d.xy) - 0.18) * 22.0) * 1.3;
+      return col;
+    }
+    vec3 tBang(vec3 d){
+      float r = length(d.xy);
+      float core = exp(-r * 3.5);
+      float shell = exp(-abs(r - 0.45) * 8.0);
+      return vec3(1.2, 0.95, 0.7) * core * 1.4 + vec3(1.0, 0.45, 0.1) * shell * 0.8 + starfield(d) * 0.3;
+    }
+    vec3 sampleTier(int id, vec3 d){
+      if (id == 0) return tLaniakea(d);
+      if (id == 1) return tCluster(d);
+      if (id == 2) return tSpiral(d);
+      if (id == 3) return tNebula(d);
+      if (id == 4) return tOort(d);
+      if (id == 5) return tGiant(d);
+      if (id == 6) return tTerra(d);
+      if (id == 7) return tCity(d);
+      if (id == 8) return tCrystal(d);
+      if (id == 9) return tCell(d);
+      if (id == 10) return tDNA(d);
+      if (id == 11) return tMolecule(d);
+      if (id == 12) return tOrbitals(d);
+      if (id == 13) return tNucleon(d);
+      if (id == 14) return tQGP(d);
+      if (id == 15) return tElectroweak(d);
+      if (id == 16) return tStrings(d);
+      if (id == 17) return tFoam(d);
+      if (id == 18) return tHorizon(d);
+      return tBang(d);
+    }
+    vec3 innerCosmos(vec3 dir, float descent){
+      float x = descent;
+      if (x < 0.0) x += 20.0;
+      x = mod(x, 20.0);
+      float i0 = floor(x);
+      float f = fract(x);
+      vec3 a = sampleTier(int(i0), dir);
+      vec3 b = sampleTier(int(mod(i0 + 1.0, 20.0)), dir);
+      float w = smoothstep(0.0, 1.0, f);
+      return mix(a, b, w);
     }
     float diskNoise(vec2 xz, float r, float t){
       float a = atan(xz.y, xz.x);
@@ -565,57 +773,41 @@
 
       float reveal = smoothstep(15.0, 4.6, uCamDist);
       float macro = smoothstep(14.0, 30.0, uCamDist);
-      float falling = smoothstep(0.0, 0.45, uFall);
+      float xDes = mod(max(uDescent, 0.0), 20.0);
+      float wellAmt = smoothstep(16.6, 18.0, xDes) * (1.0 - smoothstep(18.9, 19.85, xDes));
       vec3 look = normalize(vel);
+      vec3 tierCol = innerCosmos(look, uDescent);
       if (!captured){
-        col += transmit * starfield(look);
-        col += transmit * distantGalaxies(look) * (0.35 + 0.9 * macro) * (1.0 - falling * 0.7);
-        col += transmit * galaxyBand(look, 0.35) * macro * 0.85 * (1.0 - falling);
+        col += transmit * starfield(look) * mix(0.25, 1.0, wellAmt);
+        col += transmit * distantGalaxies(look) * macro * 0.35 * (1.0 - wellAmt);
+        col += transmit * tierCol * mix(1.05, 0.25, wellAmt);
       } else {
-        col *= 0.18;
-        col += innerCosmos(look, uFall) * (0.45 + 1.8 * reveal + 0.4 * falling);
+        col *= mix(0.12, 0.22, wellAmt);
+        col += tierCol * mix(1.15, 0.7, wellAmt);
       }
 
       float ring = exp(-abs(minR - 1.52) * 18.0);
       if (!captured){
-        col += ring * vec3(1.35, 0.92, 0.52) * (1.35 - falling * 0.4);
-        col += ring * hsv2rgb(vec3(fract(0.08 + uTime * 0.03 + atan(rd.z, rd.x) * 0.15), 0.5, 0.55)) * 0.18;
+        col += ring * vec3(1.35, 0.92, 0.52) * (0.35 + 1.1 * wellAmt);
       }
 
-      if (uFall > 0.02){
-        float rid = mod(floor(uFall), 6.0);
+      if (xDes > 17.5 && xDes < 19.2){
         vec2 suv = (2.0 * gl_FragCoord.xy - uRes) / uRes.y;
         float rf = length(suv);
-        if (rid < 0.5){
-          vec3 rcol = vec3(1.18, 0.76, 0.38);
-          for (int i = 0; i < 8; i++){
-            float tRing = fract(uFall * 0.38 + float(i) * 0.125);
-            float rad = mix(1.28, 0.04, tRing * tRing);
-            float w = mix(11.0, 60.0, tRing);
-            float tun = exp(-abs(rf - rad) * w);
-            col += rcol * tun * (1.0 - tRing) * (0.1 / (1.0 + uFall * 0.18)) * falling;
-          }
-        } else if (rid > 0.5 && rid < 1.5){
-          col += vec3(1.0, 0.38, 0.08) * exp(-rf * 1.4) * 0.08 * falling;
-        } else if (rid > 2.5 && rid < 3.5){
-          vec2 w1 = vec2(0.34, 0.07);
-          vec2 w2 = vec2(-0.38, -0.1);
-          float d1 = length(suv - w1);
-          float d2 = length(suv - w2);
-          col *= 1.0 - smoothstep(0.22, 0.13, d1) * 0.85 - smoothstep(0.22, 0.13, d2) * 0.85;
-          col += vec3(1.15, 0.74, 0.38) * exp(-abs(d1 - 0.155) * 42.0) * 0.9 * falling;
-          col += vec3(1.15, 0.74, 0.38) * exp(-abs(d2 - 0.155) * 42.0) * 0.9 * falling;
-        } else if (rid > 4.5){
-          col += vec3(0.35, 0.7, 1.0) * exp(-rf * 1.6) * 0.06 * falling;
+        for (int i = 0; i < 6; i++){
+          float tRing = fract(xDes * 0.4 + float(i) * 0.16);
+          float rad = mix(1.2, 0.05, tRing * tRing);
+          float tun = exp(-abs(rf - rad) * mix(10.0, 50.0, tRing));
+          col += vec3(1.18, 0.76, 0.38) * tun * (1.0 - tRing) * 0.08 * wellAmt;
         }
       }
 
       float impact = length(cross(uCamPos, rd));
-      float jet = exp(-impact * 2.1) * smoothstep(0.22, 0.9, abs(rd.y)) * 0.06 * (1.0 - reveal * 0.5);
-      col += vec3(1.0, 0.68, 0.32) * jet * uExposure * (1.0 - falling);
+      float jet = exp(-impact * 2.1) * smoothstep(0.22, 0.9, abs(rd.y)) * 0.06 * wellAmt;
+      col += vec3(1.0, 0.68, 0.32) * jet * uExposure;
 
       col *= uExposure;
-      col = col / (1.0 + col * (0.35 + falling * 0.45));
+      col = col / (1.0 + col * 0.4);
       fragColor = vec4(max(col, 0.0), 1.0);
     }`;
 
@@ -1148,41 +1340,16 @@
       return { pos, fwd, right, up };
     }
 
-    const HERO = 16.4;
-    const THROAT_DIST = 2.42;
-    const DESCENT_K = 1.05;
-    const DESCENT_THROAT = Math.log(HERO / THROAT_DIST) / DESCENT_K;
-    const DESCENT_MIN = -1.85;
-    function distFromDescent(des) {
-      const d = Math.min(des, DESCENT_THROAT);
-      return HERO * Math.exp(-DESCENT_K * d);
-    }
-    function descentFromDist(dist) {
-      return -Math.log(Math.max(dist, THROAT_DIST) / HERO) / DESCENT_K;
-    }
-    const qDist = parseFloat(new URLSearchParams(location.search).get("dist") || "");
-    const qFall = parseFloat(new URLSearchParams(location.search).get("fall") || "");
+    const qD = parseFloat(new URLSearchParams(location.search).get("d") || new URLSearchParams(location.search).get("descent") || "");
     const cam = {
       yaw: 0.55,
       pitch: 0.38,
-      descent: Number.isFinite(qDist) ? descentFromDist(qDist) : (reduced ? 0 : descentFromDist(26)),
-      fall: Number.isFinite(qFall) ? Math.max(0, qFall) : 0,
-      dist: HERO,
+      zoom: Number.isFinite(qD) ? qD : (reduced ? 19 : 18.35),
+      dist: 16.4,
       vy: 0, vp: 0, vd: 0,
       auto: true
     };
-    if (Number.isFinite(qFall) && qFall > 0) {
-      cam.descent = DESCENT_THROAT + qFall;
-    } else if (Number.isFinite(qDist) && qDist <= THROAT_DIST + 0.05) {
-      cam.descent = DESCENT_THROAT;
-    }
-    if (cam.descent <= DESCENT_THROAT) {
-      cam.fall = 0;
-      cam.dist = distFromDescent(cam.descent);
-    } else {
-      cam.fall = cam.descent - DESCENT_THROAT;
-      cam.dist = THROAT_DIST;
-    }
+    cam.dist = PRISM.distForZoom(cam.zoom);
     let down = false, lx = 0, ly = 0, pinch = 0;
     let pulse = 8, pulseAmp = 0;
     let mass = [8, 0, 0], massG = 0;
@@ -1267,6 +1434,7 @@
     });
 
     let ac, analyser, masterGain, filterNode, waveData;
+    let noiseGainNode, fmGainNode, droneGainNode, subOsc, fmOsc;
     const auBtn = document.getElementById("au");
     const waveEl = document.getElementById("wave");
     waveEl.innerHTML = Array.from({ length: 22 }, () => "<i></i>").join("");
@@ -1309,20 +1477,26 @@
         analyser.connect(ac.destination);
         waveData = new Uint8Array(analyser.frequencyBinCount);
 
-        function osc(type, freq, gain, detune) {
-          const o = ac.createOscillator();
-          o.type = type; o.frequency.value = freq; if (detune) o.detune.value = detune;
-          const g = ac.createGain(); g.gain.value = gain;
-          o.connect(g).connect(masterGain);
-          o.start();
-          return o;
-        }
-        osc("sine", 36.71, 0.2);
-        osc("triangle", 73.42, 0.035, 6);
-        osc("sine", 110, 0.018, -4);
-        osc("sine", 329.63, 0.007);
-        osc("sine", 493.88, 0.004, 3);
-
+        const boot = PRISM.audioForDescent(cam.zoom);
+        subOsc = ac.createOscillator();
+        subOsc.type = "sine";
+        subOsc.frequency.value = boot.subHz;
+        droneGainNode = ac.createGain();
+        droneGainNode.gain.value = boot.droneGain;
+        subOsc.connect(droneGainNode).connect(masterGain);
+        const d2 = ac.createOscillator();
+        d2.type = "triangle";
+        d2.frequency.value = boot.droneHz;
+        d2.detune.value = 6;
+        const d2g = ac.createGain();
+        d2g.gain.value = boot.droneGain * 0.2;
+        d2.connect(d2g).connect(masterGain);
+        fmOsc = ac.createOscillator();
+        fmOsc.type = "sine";
+        fmOsc.frequency.value = boot.fmHz;
+        fmGainNode = ac.createGain();
+        fmGainNode.gain.value = boot.fmGain;
+        fmOsc.connect(fmGainNode).connect(masterGain);
         const nlen = ac.sampleRate * 2;
         const buf = ac.createBuffer(1, nlen, ac.sampleRate);
         const d = buf.getChannelData(0);
@@ -1331,11 +1505,12 @@
         noise.buffer = buf; noise.loop = true;
         filterNode = ac.createBiquadFilter();
         filterNode.type = "bandpass";
-        filterNode.frequency.value = 380;
-        filterNode.Q.value = 5;
-        const ng = ac.createGain(); ng.gain.value = 0.03;
-        noise.connect(filterNode).connect(ng).connect(masterGain);
-        noise.start();
+        filterNode.frequency.value = boot.filterHz;
+        filterNode.Q.value = 4;
+        noiseGainNode = ac.createGain();
+        noiseGainNode.gain.value = boot.noiseGain;
+        noise.connect(filterNode).connect(noiseGainNode).connect(masterGain);
+        subOsc.start(); d2.start(); fmOsc.start(); noise.start();
         masterGain.gain.linearRampToValueAtTime(0.85, ac.currentTime + 2.4);
       }
       if (ac.state === "suspended") await ac.resume();
@@ -1347,6 +1522,26 @@
     if (mobile) {
       document.getElementById("hint").textContent = "Drag to orbit · pinch to descend · tap to drop mass";
     }
+    function syncHud() {
+      const hudMap = PRISM.mapDescent(cam.zoom);
+      document.getElementById("rad").textContent = cam.dist.toFixed(2) + " Rs";
+      const zed = 1 / Math.sqrt(Math.max(0.05, 1 - 1 / Math.max(cam.dist, 1.05))) - 1;
+      document.getElementById("zed").textContent = zed.toFixed(3);
+      document.getElementById("layer").textContent = hudMap.name;
+      const expN = hudMap.exp;
+      document.getElementById("scale").textContent =
+        (expN >= 0 ? "10^" + Math.round(expN) : "10^-" + Math.abs(Math.round(expN))) + " m";
+      const aud = PRISM.audioForDescent(cam.zoom);
+      if (filterNode && ac) {
+        filterNode.frequency.value = aud.filterHz + pulseAmp * 80;
+        if (noiseGainNode) noiseGainNode.gain.value = aud.noiseGain;
+        if (fmGainNode) fmGainNode.gain.value = aud.fmGain;
+        if (droneGainNode) droneGainNode.gain.value = aud.droneGain;
+        if (subOsc) subOsc.frequency.value = aud.subHz;
+        if (fmOsc) fmOsc.frequency.value = aud.fmHz;
+      }
+    }
+    syncHud();
 
     const t0 = performance.now();
     let last = t0, frames = 0, fpsT = t0, fps = 60;
@@ -1374,8 +1569,8 @@
       if (!reduced) {
         const k = Math.min(t / 3.8, 1);
         const e = 1 - Math.pow(1 - k, 3);
-        if (t < 4.2 && !Number.isFinite(qDist) && !Number.isFinite(qFall)) {
-          cam.descent += (0 - cam.descent) * (0.6 * dt + 0.015);
+        if (t < 4.2 && !Number.isFinite(qD)) {
+          cam.zoom += (19 - cam.zoom) * (0.55 * dt + 0.012);
         }
         exposure = Math.min(1, Math.max(0, (t - 0.35) / 2.4));
         if (t > 2.4) document.getElementById("hud").classList.add("on");
@@ -1390,15 +1585,10 @@
       cam.vy *= 0.9; cam.vp *= 0.9; cam.vd *= 0.92;
       cam.yaw += cam.vy;
       cam.pitch = Math.max(-1.15, Math.min(1.22, cam.pitch + cam.vp));
-      cam.descent -= cam.vd * dt * 0.72;
-      if (cam.descent < DESCENT_MIN) { cam.descent = DESCENT_MIN; cam.vd = Math.max(0, cam.vd); }
-      if (cam.descent <= DESCENT_THROAT) {
-        cam.fall = 0;
-        cam.dist = distFromDescent(cam.descent);
-      } else {
-        cam.fall = cam.descent - DESCENT_THROAT;
-        cam.dist = THROAT_DIST;
-      }
+      cam.zoom -= cam.vd * dt * 0.42;
+      const mapped = PRISM.mapDescent(cam.zoom);
+      cam.dist = PRISM.distForZoom(cam.zoom);
+      const uDes = mapped.unit;
 
       pulse += dt * 2.15;
       pulseAmp *= Math.pow(0.22, dt);
@@ -1463,7 +1653,8 @@
       gl.uniform1f(progBH.u.uPulseAmp, pulseAmp);
       gl.uniform1f(progBH.u.uSteps, steps);
       gl.uniform1f(progBH.u.uCamDist, cam.dist);
-      gl.uniform1f(progBH.u.uFall, cam.fall);
+      gl.uniform1f(progBH.u.uFall, uDes);
+      gl.uniform1f(progBH.u.uDescent, uDes);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
       gl.enable(gl.DEPTH_TEST);
@@ -1479,7 +1670,7 @@
       gl.uniform3f(progPrism.u.uCamRight, b.right[0], b.right[1], b.right[2]);
       gl.uniform3f(progPrism.u.uCamUp, b.up[0], b.up[1], b.up[2]);
       gl.uniform1f(progPrism.u.uPulseAmp, pulseAmp);
-      gl.uniform1f(progPrism.u.uFall, cam.fall);
+      gl.uniform1f(progPrism.u.uFall, uDes);
       gl.drawArraysInstanced(gl.TRIANGLES, 0, mesh.count, nPrism);
 
       gl.depthMask(false);
@@ -1495,7 +1686,7 @@
       gl.uniform1f(progPt.u.uMassG, massG);
       gl.uniform1f(progPt.u.uPoint, Math.max(canvas.height / 900, 0.7));
       gl.uniform1f(progPt.u.uCamDist, cam.dist);
-      gl.uniform1f(progPt.u.uFall, cam.fall);
+      gl.uniform1f(progPt.u.uFall, uDes);
       gl.drawArrays(gl.POINTS, 0, nP);
 
       if (infalls.length) {
@@ -1571,16 +1762,7 @@
         const cc = Math.floor((proper % 1) * 100);
         document.getElementById("tau").innerHTML =
           String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0") + ".<span>" + String(cc).padStart(2, "0") + "</span>";
-        document.getElementById("rad").textContent = (cam.fall > 0.02 ? (cam.dist / Math.exp(cam.fall * 3.05)).toExponential(2) : cam.dist.toFixed(2)) + " Rs";
-        const z = 1 / Math.sqrt(Math.max(0.05, 1 - 1 / Math.max(cam.dist, 1.05))) - 1;
-        document.getElementById("zed").textContent = z.toFixed(3);
-        const layerEl = document.getElementById("layer");
-        const realms = ["THE ARCHIVE", "EMBER SWARM", "PALE HOST", "TWIN WELLS", "THE QUIET", "COLD NURSERY"];
-        if (cam.fall > 0.04) layerEl.textContent = realms[Math.floor(cam.fall) % 6];
-        else layerEl.textContent = cam.dist > 28 ? "DEEP FIELD" : cam.dist > 14 ? "THE WELL" : cam.dist > 8 ? "PHOTON SPHERE" : cam.dist > 4.6 ? "THE THROAT" : "THE ARCHIVE";
-        if (filterNode && ac) {
-          filterNode.frequency.value = 140 + Math.max(0, 18 - cam.fall * 9) * 10 + pulseAmp * 220 + Math.sin(t * 0.35) * 24;
-        }
+        syncHud();
         if (fps < 36 && steps > 28) { steps -= 4; if (!mobile && renderScale > 0.45) { renderScale *= 0.92; resizeRT(); } }
         else if (fps > 56 && steps < stepsTarget) steps += 2;
       }
