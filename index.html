@@ -333,9 +333,10 @@
     }
     function distForZoom(d) {
       var x = wrapDescent(d);
-      var u = x / 19.0;
-      if (x >= 19) return 2.55;
-      return 2.42 + 72.0 * Math.pow(1.0 - Math.min(x / 18.2, 1), 1.35);
+      if (x >= 18.6) return 2.5;
+      if (x < 6) return 28 + 48 * (1 - x / 6);
+      if (x < 10) return 8 + 20 * (1 - (x - 6) / 4);
+      return 2.6 + 7.4 * (1 - (x - 10) / 8.6);
     }
     return {
       TIERS: TIERS,
@@ -496,20 +497,6 @@
       }
       return col;
     }
-    vec3 hitPlanet(vec3 dir, vec3 c, float rad, vec3 albedo, vec3 L, vec3 Lc){
-      vec3 oc = -c;
-      float b = dot(oc, dir);
-      float h = b * b - dot(oc, oc) + rad * rad;
-      if (h < 0.0) return vec3(-1.0);
-      float t = -b - sqrt(h);
-      if (t < 0.0) return vec3(-1.0);
-      vec3 n = normalize(dir * t - c);
-      float ndl = max(0.0, dot(n, L));
-      float fres = pow(1.0 - max(dot(n, -dir), 0.0), 3.1);
-      float crater = hash13(floor(n * 9.0 + c * 4.0));
-      vec3 rock = mix(albedo * 0.4, albedo, crater);
-      return rock * (0.06 + ndl * 0.95) * Lc * 1.5 + Lc * fres * 0.38;
-    }
     float fbm(vec3 p){
       float a = 0.5, s = 0.0;
       for (int i = 0; i < 4; i++){
@@ -519,175 +506,201 @@
       }
       return s;
     }
-    vec3 tLaniakea(vec3 d){
-      vec3 col = vec3(0.01, 0.012, 0.03) + starfield(d) * 0.55;
-      float web = 0.0;
+    float sdSphere(vec3 p, float r){ return length(p) - r; }
+    float sdTorus(vec3 p, vec2 t){
+      vec2 q = vec2(length(p.xz) - t.x, p.y);
+      return length(q) - t.y;
+    }
+    float sdCapsule(vec3 p, vec3 a, vec3 b, float r){
+      vec3 pa = p - a, ba = b - a;
+      float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+      return length(pa - ba * h) - r;
+    }
+    float smin(float a, float b, float k){
+      float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+      return mix(b, a, h) - k * h * (1.0 - h);
+    }
+    float gyroid(vec3 p){ return abs(dot(sin(p), cos(p.zxy))) - 0.4; }
+    float Ylm2(vec3 n){
+      float Y00 = 0.282;
+      float Y10 = 0.488 * n.y;
+      float Y11 = 0.488 * n.x;
+      float Y1m = 0.488 * n.z;
+      float Y20 = 0.315 * (3.0 * n.y * n.y - 1.0);
+      float Y21 = 1.092 * n.x * n.y;
+      float Y22 = 0.546 * (n.x * n.x - n.z * n.z);
+      float Y2m = 1.092 * n.z * n.y;
+      return Y00*Y00 + Y10*Y10 + 0.65*Y11*Y11 + 0.55*Y1m*Y1m + 0.8*Y20*Y20 + 0.45*Y21*Y21 + 0.5*Y22*Y22 + 0.4*Y2m*Y2m;
+    }
+    float deLaniakea(vec3 p){
+      float d = 1e3;
       for (int i = 0; i < 5; i++){
         vec3 n = normalize(vec3(hash13(vec3(float(i), 1.2, 3.3)) - 0.5, hash13(vec3(float(i), 4.1, 0.2)) - 0.5, hash13(vec3(float(i), 7.7, 2.0)) - 0.5));
-        web += exp(-abs(dot(d, n)) * 18.0) * (0.4 + 0.6 * fbm(d * 8.0 + float(i)));
+        d = min(d, length(cross(p, n)) - (0.35 + 0.2 * fbm(p * 0.08)));
       }
-      return col + vec3(0.55, 0.35, 0.85) * web * 0.55 + distantGalaxies(d) * 1.4;
+      return d;
     }
-    vec3 tCluster(vec3 d){
-      vec3 col = starfield(d) * 0.8 + vec3(0.02, 0.02, 0.05);
-      col += distantGalaxies(d) * 2.2;
-      col += vec3(0.12, 0.08, 0.2) * exp(-abs(d.y) * 3.0) * 0.4;
-      return col;
-    }
-    vec3 tSpiral(vec3 d){
-      return starfield(d) * 1.1 + galaxyBand(d, 0.2) * 4.2 + distantGalaxies(d) * 0.6;
-    }
-    vec3 tNebula(vec3 d){
-      float n = fbm(d * 6.0);
-      vec3 a = vec3(0.7, 0.15, 0.45);
-      vec3 b = vec3(0.15, 0.35, 0.8);
-      return starfield(d) * 0.7 + mix(a, b, n) * n * 0.85;
-    }
-    vec3 tOort(vec3 d){
-      vec3 col = starfield(d) * 1.3;
-      float sun = pow(max(dot(d, normalize(vec3(0.2, 0.15, 1.0))), 0.0), 80.0);
-      col += vec3(1.2, 0.95, 0.6) * sun * 2.2;
-      col += vec3(0.4, 0.35, 0.3) * exp(-abs(length(d.xy) - 0.7) * 8.0) * 0.2;
-      return col;
-    }
-    vec3 tGiant(vec3 d){
-      vec3 L = normalize(vec3(0.3, 0.5, 0.7));
-      vec3 p = hitPlanet(d, vec3(0.0, -0.05, 0.85), 0.42, vec3(0.7, 0.45, 0.2), L, vec3(1.0, 0.8, 0.5));
-      vec3 col = starfield(d) * 0.5;
-      if (p.x > -0.5) col = p;
-      float ring = abs(d.y);
-      col += vec3(0.9, 0.7, 0.4) * exp(-abs(length(d.xz) - 0.7) * 30.0) * smoothstep(0.12, 0.02, ring) * 0.7;
-      col += vec3(0.3, 0.8, 1.0) * pow(max(d.y, 0.0), 6.0) * 0.35;
-      return col;
-    }
-    vec3 tTerra(vec3 d){
-      vec3 L = normalize(vec3(0.4, 0.6, 0.5));
-      vec3 p = hitPlanet(d, vec3(0.05, -0.08, 0.8), 0.4, vec3(0.15, 0.35, 0.7), L, vec3(1.0, 0.95, 0.8));
-      vec3 col = starfield(d) * 0.4;
-      if (p.x > -0.5){
-        col = p;
-        col += vec3(0.2, 0.55, 0.15) * max(0.0, p.y) * 0.15;
-      }
-      col += vec3(0.4, 0.7, 1.0) * pow(1.0 - abs(dot(d, normalize(vec3(0.05, -0.08, 0.8)))), 8.0) * 0.12;
-      return col;
-    }
-    vec3 tCity(vec3 d){
-      vec3 col = vec3(0.02, 0.02, 0.03);
-      vec2 g = d.xz * 18.0;
-      float grid = exp(-abs(sin(g.x * 3.1415) * sin(g.y * 3.1415)) * 12.0);
-      col += vec3(1.0, 0.75, 0.35) * grid * smoothstep(0.15, -0.05, d.y) * 0.45;
-      col += vec3(0.3, 0.5, 1.0) * pow(hash13(floor(vec3(g, 2.0))), 8.0) * 0.6;
-      return col + starfield(d) * 0.25;
-    }
-    vec3 tCrystal(vec3 d){
-      float v = hash13(floor(d * 7.0));
-      vec3 facet = vec3(0.7, 0.85, 1.0) * pow(abs(dot(d, normalize(vec3(v, 0.4, 0.7)))), 4.0);
-      return vec3(0.05, 0.06, 0.08) + facet * 0.8 + starfield(d) * 0.2;
-    }
-    vec3 tCell(vec3 d){
-      float r = length(d.xy);
-      float mem = exp(-abs(r - 0.55) * 18.0);
-      float org = exp(-length(d.xy - vec2(0.15, 0.1)) * 12.0) + exp(-length(d.xy + vec2(0.2, -0.05)) * 10.0);
-      return vec3(0.15, 0.04, 0.06) + vec3(0.9, 0.25, 0.35) * mem * 0.8 + vec3(1.0, 0.5, 0.2) * org * 0.5;
-    }
-    vec3 tDNA(vec3 d){
-      float a = atan(d.x, d.z) + d.y * 12.0;
-      float helix = exp(-abs(length(d.xz) - 0.22 - 0.06 * sin(a)) * 22.0);
-      float rung = exp(-abs(sin(d.y * 28.0)) * 8.0) * exp(-abs(d.x) * 6.0);
-      return vec3(0.03, 0.05, 0.08) + vec3(0.4, 0.9, 0.7) * helix * 0.9 + vec3(0.95, 0.8, 0.2) * rung * 0.35;
-    }
-    vec3 tMolecule(vec3 d){
-      vec3 col = vec3(0.02, 0.03, 0.05);
+    float deCluster(vec3 p){
+      float d = 1e3;
       for (int i = 0; i < 6; i++){
-        vec3 c = normalize(vec3(hash13(vec3(float(i), 1.0, 2.0)) - 0.5, hash13(vec3(float(i), 3.0, 4.0)) - 0.5, 0.6));
-        col += vec3(0.4, 0.7, 1.0) * exp(-length(d - c) * 18.0) * 0.7;
+        vec3 c = (vec3(hash13(vec3(float(i), 0.1, 2.2)), hash13(vec3(float(i), 3.3, 4.4)), hash13(vec3(float(i), 5.5, 6.6))) - 0.5) * 18.0;
+        d = min(d, sdSphere(p - c, 1.1 + hash13(vec3(float(i), 9.0, 1.0))));
       }
-      return col;
+      return min(d, sdSphere(p, 9.5));
     }
-    vec3 tOrbitals(vec3 d){
-      float Y10 = d.y;
-      float Y11 = d.x;
-      float Y20 = 1.5 * d.y * d.y - 0.5;
-      float Y22 = d.x * d.x - d.z * d.z;
-      float lobe = abs(Y10) * 0.45 + abs(Y20) * 0.35 + abs(Y22) * 0.25 + abs(Y11 * d.z) * 0.3;
-      vec3 col = vec3(0.02, 0.04, 0.08) + vec3(0.35, 0.7, 1.0) * pow(lobe, 1.6) * 0.85;
-      col += vec3(1.0, 0.4, 0.2) * pow(abs(Y10), 4.0) * 0.35;
-      return col + starfield(d) * 0.15;
+    float deSpiral(vec3 p){
+      float r = length(p.xz);
+      float a = atan(p.z, p.x);
+      float arm = abs(mod(a + r * 0.35, 2.094) - 1.047) * r;
+      return min(sdTorus(p, vec2(8.0, 1.6)), length(vec2(arm, p.y)) - 0.55);
     }
-    vec3 tNucleon(vec3 d){
-      vec3 p1 = vec3(0.12, 0.0, 0.7);
-      vec3 p2 = vec3(-0.12, 0.04, 0.72);
-      float a = exp(-length(d - p1) * 10.0);
-      float b = exp(-length(d - p2) * 10.0);
-      return vec3(0.05, 0.02, 0.04) + vec3(1.0, 0.25, 0.2) * a + vec3(0.2, 0.4, 1.0) * b;
+    float deNebula(vec3 p){ return 0.22 - 0.35 * fbm(p * 0.22); }
+    float deOort(vec3 p){
+      float sun = sdSphere(p, 1.15);
+      float cloud = abs(length(p) - 9.0) - 0.35;
+      return min(sun, cloud);
     }
-    vec3 tQGP(vec3 d){
-      float n = fbm(d * 14.0 + uTime * 0.4);
-      vec3 rgb = hsv2rgb(vec3(fract(n * 1.7 + uTime * 0.05), 0.75, 0.9));
-      return rgb * n * 0.7 + vec3(0.08, 0.02, 0.04);
+    float deGiant(vec3 p){
+      return min(sdSphere(p, 3.2), sdTorus(vec3(p.x, p.y * 3.4, p.z), vec2(4.6, 0.18)));
     }
-    vec3 tElectroweak(vec3 d){
-      vec3 g = abs(sin(d * 18.0));
-      float lat = exp(-min(min(g.x, g.y), g.z) * 16.0);
-      return vec3(0.04, 0.05, 0.1) + vec3(0.6, 0.8, 1.0) * lat * 0.55 + vec3(1.0, 0.5, 0.2) * lat * lat * 0.3;
+    float deTerra(vec3 p){ return sdSphere(p, 2.8); }
+    float deCity(vec3 p){
+      vec3 q = p;
+      q.xz = mod(q.xz + 1.1, 2.2) - 1.1;
+      float h = 0.4 + 1.6 * hash13(floor(p.xzz * 0.45));
+      vec3 b = abs(q) - vec3(0.28, h, 0.28);
+      return length(max(b, 0.0)) + min(max(b.x, max(b.y, b.z)), 0.0) - 0.02;
     }
-    vec3 tStrings(vec3 d){
-      float s = 0.0;
+    float deCrystal(vec3 p){
+      vec3 q = abs(p);
+      return max(q.x + q.y + q.z - 3.2, length(p) - 3.6) - 0.08 * sin(p.x * 6.0);
+    }
+    float deCell(vec3 p){
+      float mem = abs(length(p) - 2.6) - 0.12;
+      float n = sdSphere(p - vec3(0.6, 0.2, 0.1), 0.55);
+      float g = sdSphere(p + vec3(0.7, -0.3, 0.2), 0.35);
+      return smin(mem, smin(n, g, 0.25), 0.2);
+    }
+    float deDNA(vec3 p){
+      float a = p.y * 3.4;
+      vec3 h1 = vec3(cos(a), 0.0, sin(a)) * 0.85;
+      vec3 h2 = vec3(cos(a + 3.1416), 0.0, sin(a + 3.1416)) * 0.85;
+      vec3 q = vec3(p.x, mod(p.y + 8.0, 16.0) - 8.0, p.z);
+      float d = min(sdCapsule(q, h1, h1 + vec3(0.0, 0.4, 0.0), 0.12), sdCapsule(q, h2, h2 + vec3(0.0, 0.4, 0.0), 0.12));
+      d = min(d, sdCapsule(q, h1, h2, 0.05));
+      return d;
+    }
+    float deMolecule(vec3 p){
+      float d = 1e3;
       for (int i = 0; i < 6; i++){
-        float ph = uTime * (1.2 + float(i) * 0.17) + float(i);
-        s += exp(-abs(d.y - 0.15 * sin(d.x * 12.0 + ph)) * 20.0) * exp(-abs(d.z - 0.1 * sin(ph * 1.3)) * 8.0);
+        vec3 c = normalize(vec3(hash13(vec3(float(i), 1.0, 2.0)) - 0.5, hash13(vec3(float(i), 3.0, 4.0)) - 0.5, hash13(vec3(float(i), 5.0, 0.2)) - 0.2)) * 1.6;
+        d = min(d, sdSphere(p - c, 0.38));
+        if (i > 0){
+          vec3 c0 = normalize(vec3(hash13(vec3(0.0, 1.0, 2.0)) - 0.5, hash13(vec3(0.0, 3.0, 4.0)) - 0.5, 0.4)) * 1.6;
+          d = min(d, sdCapsule(p, c0, c, 0.07));
+        }
       }
-      return vec3(0.03, 0.02, 0.06) + vec3(1.0, 0.85, 0.5) * s * 0.65;
+      return d;
     }
-    vec3 tFoam(vec3 d){
-      float n = fbm(d * 22.0 + uTime * 0.8);
-      float holes = smoothstep(0.45, 0.7, n);
-      return mix(vec3(0.01, 0.01, 0.02), vec3(0.5, 0.7, 1.0) * n, holes) + starfield(d) * 0.2;
+    float deOrbitals(vec3 p){
+      float r = length(p);
+      vec3 n = p / max(r, 1e-4);
+      float rad = r * r * exp(-r * 1.35);
+      float ang = Ylm2(n);
+      return 0.22 - rad * ang * 2.8;
     }
-    vec3 tHorizon(vec3 d){
-      vec3 gold = vec3(1.0, 0.72, 0.36);
-      vec3 col = starfield(d) * 0.9 + galaxyBand(d, 1.1) * 1.2;
-      col += gold * exp(-abs(length(d.xy) - 0.18) * 22.0) * 1.3;
-      return col;
+    float deNucleon(vec3 p){
+      return smin(sdSphere(p - vec3(0.55, 0.0, 0.0), 0.85), sdSphere(p + vec3(0.55, 0.05, 0.0), 0.85), 0.2);
     }
-    vec3 tBang(vec3 d){
-      float r = length(d.xy);
-      float core = exp(-r * 3.5);
-      float shell = exp(-abs(r - 0.45) * 8.0);
-      return vec3(1.2, 0.95, 0.7) * core * 1.4 + vec3(1.0, 0.45, 0.1) * shell * 0.8 + starfield(d) * 0.3;
+    float deQGP(vec3 p){ return 0.18 - 0.42 * fbm(p * 0.9 + uTime * 0.35); }
+    float deElectroweak(vec3 p){
+      vec3 q = abs(mod(p + 1.2, 2.4) - 1.2);
+      return min(min(max(q.y, q.z), max(q.x, q.z)), max(q.x, q.y)) - 0.045;
     }
-    vec3 sampleTier(int id, vec3 d){
-      if (id == 0) return tLaniakea(d);
-      if (id == 1) return tCluster(d);
-      if (id == 2) return tSpiral(d);
-      if (id == 3) return tNebula(d);
-      if (id == 4) return tOort(d);
-      if (id == 5) return tGiant(d);
-      if (id == 6) return tTerra(d);
-      if (id == 7) return tCity(d);
-      if (id == 8) return tCrystal(d);
-      if (id == 9) return tCell(d);
-      if (id == 10) return tDNA(d);
-      if (id == 11) return tMolecule(d);
-      if (id == 12) return tOrbitals(d);
-      if (id == 13) return tNucleon(d);
-      if (id == 14) return tQGP(d);
-      if (id == 15) return tElectroweak(d);
-      if (id == 16) return tStrings(d);
-      if (id == 17) return tFoam(d);
-      if (id == 18) return tHorizon(d);
-      return tBang(d);
+    float deStrings(vec3 p){
+      float d = 1e3;
+      for (int i = 0; i < 4; i++){
+        float ph = uTime * (0.7 + 0.2 * float(i)) + float(i);
+        vec3 a = vec3(-4.0, 0.6 * sin(ph), float(i) - 1.5);
+        vec3 b = vec3(4.0, 0.6 * sin(ph + 1.2), float(i) - 1.5);
+        d = min(d, sdCapsule(p, a, b, 0.08 + 0.04 * sin(p.x * 3.0 + ph)));
+      }
+      return d;
     }
-    vec3 innerCosmos(vec3 dir, float descent){
-      float x = descent;
-      if (x < 0.0) x += 20.0;
-      x = mod(x, 20.0);
-      float i0 = floor(x);
-      float f = fract(x);
-      vec3 a = sampleTier(int(i0), dir);
-      vec3 b = sampleTier(int(mod(i0 + 1.0, 20.0)), dir);
-      float w = smoothstep(0.0, 1.0, f);
-      return mix(a, b, w);
+    float deFoam(vec3 p){ return gyroid(p * 1.4 + uTime * 0.25) * 0.35; }
+    float deHorizon(vec3 p){ return abs(length(p) - 1.52) - 0.06; }
+    float deBang(vec3 p){ return abs(length(p) - (1.4 + 1.8 * fract(uTime * 0.15))) - 0.12; }
+    float deTier(int id, vec3 p){
+      if (id == 0) return deLaniakea(p);
+      if (id == 1) return deCluster(p);
+      if (id == 2) return deSpiral(p);
+      if (id == 3) return deNebula(p);
+      if (id == 4) return deOort(p);
+      if (id == 5) return deGiant(p);
+      if (id == 6) return deTerra(p);
+      if (id == 7) return deCity(p);
+      if (id == 8) return deCrystal(p);
+      if (id == 9) return deCell(p);
+      if (id == 10) return deDNA(p);
+      if (id == 11) return deMolecule(p);
+      if (id == 12) return deOrbitals(p);
+      if (id == 13) return deNucleon(p);
+      if (id == 14) return deQGP(p);
+      if (id == 15) return deElectroweak(p);
+      if (id == 16) return deStrings(p);
+      if (id == 17) return deFoam(p);
+      if (id == 18) return deHorizon(p);
+      return deBang(p);
+    }
+    float densTier(int id, vec3 p){
+      float d = deTier(id, p);
+      if (id == 0) return exp(-max(d, 0.0) * 2.2) * 0.16;
+      if (id == 1) return exp(-max(d, 0.0) * 0.35) * 0.12;
+      if (id == 2) return exp(-abs(d) * 1.8) * 0.45;
+      if (id == 3) return max(0.0, 0.55 * fbm(p * 0.28 + uTime * 0.05) - 0.18);
+      if (id == 12){
+        float r = length(p);
+        return max(0.0, Ylm2(p / max(r, 1e-4)) * r * r * exp(-r * 1.2) - 0.04);
+      }
+      if (id == 14) return max(0.0, 0.65 * fbm(p * 1.1 + uTime * 0.4) - 0.2);
+      if (id == 17) return exp(-abs(d) * 3.0) * 0.4;
+      if (id == 19) return exp(-abs(d) * 2.2) * 0.8;
+      return exp(-max(d, 0.0) * 6.0) * 0.08;
+    }
+    vec3 palTier(int id, vec3 p, vec3 n){
+      vec3 L = normalize(vec3(0.4, 0.7, 0.35));
+      float ndl = clamp(dot(n, L) * 0.5 + 0.5, 0.0, 1.0);
+      if (id == 0) return vec3(0.55, 0.35, 0.9) * ndl;
+      if (id == 1) return vec3(0.45, 0.4, 0.75) * ndl;
+      if (id == 2) return vec3(1.0, 0.72, 0.38) * ndl;
+      if (id == 3) return mix(vec3(0.7, 0.15, 0.45), vec3(0.15, 0.35, 0.85), fbm(p * 0.3));
+      if (id == 4) return vec3(1.15, 0.9, 0.55) * (0.4 + ndl);
+      if (id == 5) return mix(vec3(0.85, 0.45, 0.18), vec3(1.0, 0.8, 0.5), 0.5 + 0.5 * sin(p.y * 6.0)) * ndl;
+      if (id == 6) return mix(vec3(0.12, 0.28, 0.7), vec3(0.2, 0.5, 0.18), smoothstep(-0.2, 0.6, n.y)) * ndl;
+      if (id == 7) return vec3(1.0, 0.75, 0.35) * (0.15 + ndl);
+      if (id == 8) return vec3(0.75, 0.9, 1.1) * (0.2 + pow(ndl, 3.0));
+      if (id == 9) return vec3(0.85, 0.25, 0.35) * ndl;
+      if (id == 10) return mix(vec3(0.3, 0.85, 0.65), vec3(0.95, 0.8, 0.2), step(0.0, p.x));
+      if (id == 11) return vec3(0.4, 0.7, 1.0) * ndl;
+      if (id == 12) return mix(vec3(0.3, 0.65, 1.15), vec3(1.0, 0.4, 0.2), abs(n.y));
+      if (id == 13) return mix(vec3(1.0, 0.25, 0.2), vec3(0.2, 0.4, 1.0), step(0.0, p.x));
+      if (id == 14) return hsv2rgb(vec3(fract(fbm(p) + uTime * 0.05), 0.75, 1.0));
+      if (id == 15) return vec3(0.55, 0.75, 1.1) * ndl;
+      if (id == 16) return vec3(1.0, 0.85, 0.45) * ndl;
+      if (id == 17) return vec3(0.45, 0.7, 1.0);
+      if (id == 18) return vec3(1.15, 0.78, 0.4) * (0.4 + ndl);
+      return vec3(1.2, 0.9, 0.55) * (0.5 + ndl);
+    }
+    float deMix(vec3 p, int i0, int i1, float w){
+      return mix(deTier(i0, p), deTier(i1, p), w);
+    }
+    vec3 nrmMix(vec3 p, int i0, int i1, float w){
+      vec2 e = vec2(0.012, 0.0);
+      return normalize(vec3(
+        deMix(p + e.xyy, i0, i1, w) - deMix(p - e.xyy, i0, i1, w),
+        deMix(p + e.yxy, i0, i1, w) - deMix(p - e.yxy, i0, i1, w),
+        deMix(p + e.yyx, i0, i1, w) - deMix(p - e.yyx, i0, i1, w)
+      ));
     }
     float diskNoise(vec2 xz, float r, float t){
       float a = atan(xz.y, xz.x);
@@ -706,39 +719,42 @@
     void main(){
       vec2 uv = (2.0 * gl_FragCoord.xy - uRes) / uRes.y;
       vec3 rd = normalize(uCamFwd + uv.x * uCamRight * uFov + uv.y * uCamUp * uFov);
-      vec3 pos = uCamPos;
-      vec3 vel = rd;
+      vec3 ro = uCamPos;
+      float xDes = mod(max(uDescent, 0.0), 20.0);
+      float i0f = floor(xDes);
+      float blend = smoothstep(0.0, 1.0, fract(xDes));
+      int i0 = int(i0f);
+      int i1 = int(mod(i0f + 1.0, 20.0));
+      float wellAmt = smoothstep(16.6, 18.0, xDes) * (1.0 - smoothstep(18.9, 19.85, xDes));
+      float lensAmt = wellAmt + smoothstep(0.0, 2.5, xDes) * 0.35 * (1.0 - smoothstep(5.0, 8.0, xDes));
 
+      vec3 pos = ro;
+      vec3 vel = rd;
       vec3 Lvec = cross(pos, vel);
       float L2 = dot(Lvec, Lvec);
-
       vec3 col = vec3(0.0);
       float transmit = 1.0;
       float minR = length(pos);
       bool captured = false;
-      bool escaped = false;
       int hits = 0;
-      int maxSteps = int(uSteps + 0.5);
+      int geoSteps = int(mix(8.0, uSteps, wellAmt + lensAmt * 0.5));
 
       for (int i = 0; i < 120; i++){
-        if (i >= maxSteps) break;
+        if (i >= geoSteps) break;
         float r = length(pos);
         minR = min(minR, r);
         if (r < 1.02) { captured = true; break; }
-        if (r > 110.0 && i > 6) { escaped = true; break; }
-
-        float h = 0.15 * clamp(r - 0.42, 0.045, 3.2);
+        if (r > 110.0 && i > 4) break;
+        float h = 0.16 * clamp(r - 0.42, 0.05, 3.4);
         float r5 = r * r * r * r * r;
-        vec3 acc = (-1.5 * RS * L2 / max(r5, 1e-6)) * pos;
+        vec3 acc = (-1.5 * RS * L2 / max(r5, 1e-6)) * pos * lensAmt;
         vec3 p1 = pos + vel * h + 0.5 * acc * h * h;
         float r1 = length(p1);
-        float r15 = r1 * r1 * r1 * r1 * r1;
-        vec3 acc1 = (-1.5 * RS * L2 / max(r15, 1e-6)) * p1;
+        vec3 acc1 = (-1.5 * RS * L2 / max(r1 * r1 * r1 * r1 * r1, 1e-6)) * p1 * lensAmt;
         vec3 prev = pos;
         vel = vel + 0.5 * (acc + acc1) * h;
         pos = p1;
-
-        if (prev.y * pos.y < 0.0 && hits < 3){
+        if (wellAmt > 0.05 && prev.y * pos.y < 0.0 && hits < 3){
           float tHit = prev.y / (prev.y - pos.y);
           vec3 hit = mix(prev, pos, clamp(tHit, 0.0, 1.0));
           float rho = length(hit.xz);
@@ -746,68 +762,62 @@
             hits++;
             float xr = DISK_IN / rho;
             float temp = pow(DISK_IN / rho, 0.75) * pow(max(0.001, 1.0 - sqrt(xr)), 0.25);
-            float gRed = sqrt(max(0.02, 1.0 - RS / rho));
-            temp *= gRed;
+            temp *= sqrt(max(0.02, 1.0 - RS / rho));
             float vk = sqrt(0.5 / rho);
             vec3 tng = normalize(vec3(-hit.z, 0.0, hit.x));
-            vec3 vdisk = tng * vk;
-            vec3 phDir = normalize(-vel);
-            float ndotv = dot(phDir, vdisk);
+            float ndotv = dot(normalize(-vel), tng * vk);
             float dop = sqrt(max(0.05, 1.0 - vk * vk)) / max(0.12, 1.0 - ndotv);
             float beam = pow(clamp(dop, 0.25, 3.6), 3.2);
             float n = diskNoise(hit.xz, rho, uTime);
             float edge = smoothstep(DISK_IN, DISK_IN + 0.55, rho) * smoothstep(DISK_OUT, DISK_OUT - 3.2, rho);
             float pulse = exp(-abs(rho - uPulse) * 3.4) * uPulseAmp;
-            vec3 dcol = blackbody(clamp(temp * 1.35, 0.0, 1.0));
-            float dens = n * edge * (1.15 + pulse * 2.4);
-            vec3 add = dcol * dens * beam * 2.4;
-            add += pulse * hsv2rgb(vec3(fract(rho * 0.12 + uTime * 0.05), 0.62, 1.0)) * 0.55;
-            col += transmit * add;
-            transmit *= 1.0 - 0.28 * dens;
+            vec3 add = blackbody(clamp(temp * 1.35, 0.0, 1.0)) * n * edge * beam * 2.4 * (0.85 + pulse * 2.4);
+            col += transmit * add * wellAmt;
+            transmit *= 1.0 - 0.22 * n * edge * wellAmt;
           }
         }
-
-        float fog = 0.018 / (r * r + 0.8);
-        col += transmit * vec3(1.0, 0.62, 0.28) * fog * h * 2.2;
       }
 
-      float reveal = smoothstep(15.0, 4.6, uCamDist);
-      float macro = smoothstep(14.0, 30.0, uCamDist);
-      float xDes = mod(max(uDescent, 0.0), 20.0);
-      float wellAmt = smoothstep(16.6, 18.0, xDes) * (1.0 - smoothstep(18.9, 19.85, xDes));
-      vec3 look = normalize(vel);
-      vec3 tierCol = innerCosmos(look, uDescent);
-      if (!captured){
-        col += transmit * starfield(look) * mix(0.25, 1.0, wellAmt);
-        col += transmit * distantGalaxies(look) * macro * 0.35 * (1.0 - wellAmt);
-        col += transmit * tierCol * mix(1.05, 0.25, wellAmt);
-      } else {
-        col *= mix(0.12, 0.22, wellAmt);
-        col += tierCol * mix(1.15, 0.7, wellAmt);
+      vec3 marchDir = normalize(mix(rd, vel, clamp(lensAmt, 0.0, 1.0)));
+      vec3 marchRo = captured ? pos : ro;
+      float t = captured ? 0.15 : 0.0;
+      int volSteps = int(mix(36.0, 56.0, clamp(uSteps / 72.0, 0.0, 1.0)));
+      bool hitSolid = false;
+      vec3 hitP = marchRo;
+      for (int i = 0; i < 64; i++){
+        if (i >= volSteps) break;
+        vec3 p = marchRo + marchDir * t;
+        float d = deMix(p, i0, i1, blend);
+        float den = mix(densTier(i0, p), densTier(i1, p), blend);
+        vec3 emit = mix(palTier(i0, p, normalize(p + vec3(0.0, 1.0, 0.0))), palTier(i1, p, normalize(p + vec3(0.0, 1.0, 0.0))), blend);
+        float dt = max(abs(d) * 0.45, 0.07);
+        col += transmit * emit * den * dt * 1.35;
+        transmit *= exp(-den * dt * 1.8);
+        if (d < 0.012){
+          hitSolid = true;
+          hitP = p;
+          break;
+        }
+        t += dt;
+        if (transmit < 0.02 || t > 85.0) break;
+      }
+      if (hitSolid){
+        vec3 n = nrmMix(hitP, i0, i1, blend);
+        vec3 alb = mix(palTier(i0, hitP, n), palTier(i1, hitP, n), blend);
+        vec3 L = normalize(vec3(0.35, 0.8, 0.4));
+        float ndl = clamp(dot(n, L), 0.0, 1.0);
+        float spec = pow(max(dot(reflect(-L, n), -marchDir), 0.0), 24.0);
+        col += transmit * (alb * (0.18 + 0.85 * ndl) + vec3(1.0, 0.9, 0.75) * spec * 0.35);
+        transmit *= 0.08;
       }
 
       float ring = exp(-abs(minR - 1.52) * 18.0);
-      if (!captured){
-        col += ring * vec3(1.35, 0.92, 0.52) * (0.35 + 1.1 * wellAmt);
-      }
-
-      if (xDes > 17.5 && xDes < 19.2){
-        vec2 suv = (2.0 * gl_FragCoord.xy - uRes) / uRes.y;
-        float rf = length(suv);
-        for (int i = 0; i < 6; i++){
-          float tRing = fract(xDes * 0.4 + float(i) * 0.16);
-          float rad = mix(1.2, 0.05, tRing * tRing);
-          float tun = exp(-abs(rf - rad) * mix(10.0, 50.0, tRing));
-          col += vec3(1.18, 0.76, 0.38) * tun * (1.0 - tRing) * 0.08 * wellAmt;
-        }
-      }
-
-      float impact = length(cross(uCamPos, rd));
-      float jet = exp(-impact * 2.1) * smoothstep(0.22, 0.9, abs(rd.y)) * 0.06 * wellAmt;
-      col += vec3(1.0, 0.68, 0.32) * jet * uExposure;
+      col += ring * vec3(1.35, 0.92, 0.52) * (0.2 + 1.15 * wellAmt);
+      if (!captured) col += transmit * starfield(normalize(vel));
+      else col += transmit * starfield(normalize(vel)) * 0.35;
 
       col *= uExposure;
-      col = col / (1.0 + col * 0.4);
+      col = col / (1.0 + col * 0.42);
       fragColor = vec4(max(col, 0.0), 1.0);
     }`;
 

@@ -39,6 +39,16 @@ check(/<script id="prism-core">/.test(html), "inline prism-core (not a module im
 check(!/type=["']module["']/.test(html), "no type=module");
 check(!/importmap/i.test(html), "no import maps");
 check(/getContext\(\s*["']webgl2["']/.test(html), "creates webgl2 context");
+check(!/\binnerCosmos\s*\(/.test(html), "innerCosmos look-dir overlay removed");
+[
+  "deLaniakea", "deCluster", "deSpiral", "deNebula", "deOort", "deGiant",
+  "deTerra", "deCity", "deCrystal", "deCell", "deDNA", "deMolecule",
+  "deOrbitals", "deNucleon", "deQGP", "deElectroweak", "deStrings",
+  "deFoam", "deHorizon", "deBang"
+].forEach((fn) => check(html.indexOf("float " + fn) !== -1, "DE " + fn));
+check(/Ylm2\s*\(/.test(html) && /Y20/.test(html), "spherical-harmonic orbitals");
+check(/deMix\s*\(/.test(html) && /smoothstep\(0\.0,\s*1\.0,\s*fract\(xDes\)\)/.test(html), "uDescent smoothstep DE mix");
+check(/lensAmt/.test(html) && /-1\.5 \* RS/.test(html), "gravitational lensing geodesic");
 console.log(lines.join("\n"));
 if (fail) process.exit(1);
 process.exit(0);
