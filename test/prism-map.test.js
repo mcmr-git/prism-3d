@@ -62,6 +62,15 @@ ok(frac.blend > 0 && frac.blend < 1, "fractional blend in (0,1) got " + frac.ble
 const wrap = PRISM.mapDescent(9);
 ok(wrap.domainIndex === 1 && wrap.name === NAMES[0], "9 wraps to Chladni, not clamp");
 ok(PRISM.mapDescent(17).name === NAMES[0], "17 wraps to domain 1");
+ok(typeof PRISM.distForZoom === "function", "distForZoom exported from shipped PRISM");
+for (var zd = 8; zd <= 9.05; zd += 0.05) {
+  var dist = PRISM.distForZoom(zd);
+  ok(Number.isFinite(dist) && dist > 0, "distForZoom(" + zd.toFixed(2) + ") finite got " + dist);
+}
+[-1, 0, 1, 4.5, 7.9, 8, 8.2, 8.99, 16, 24].forEach(function (zd) {
+  var dist = PRISM.distForZoom(zd);
+  ok(Number.isFinite(dist) && dist > 0, "distForZoom wrap sample " + zd + " finite got " + dist);
+});
 
 ok(typeof PRISM.analyzeAudio === "function", "analyzeAudio exported");
 const sr = 44100, fft = 4096, nBins = fft / 2;

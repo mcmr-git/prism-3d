@@ -415,7 +415,10 @@
     function audioForDescent(d) { return droneForDomain(d); }
     function distForZoom(d) {
       var x = wrapDescent(d);
-      return 3.2 + 22 * Math.pow(1 - x / 7.2, 1.25);
+      var u = 1 - x / 8;
+      if (u < 0) u = 0;
+      if (u > 1) u = 1;
+      return 3.2 + 22 * Math.pow(u, 1.25);
     }
     return {
       DOMAINS: DOMAINS,
