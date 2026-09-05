@@ -16,6 +16,7 @@ check(count >= 100000 && count <= 200000, "COUNT in [100000,200000] got " + coun
 check(/webgl2/i.test(html) && /getContext\(\s*["']webgl2["']/.test(html), "WebGL2 context");
 check(/#version 300 es/.test(html), "GLSL ES 3.00");
 check(/transformFeedback/i.test(html) && /TRANSFORM_FEEDBACK/.test(html), "Transform Feedback path");
+check(/bindBuffer\(\s*gl\.ARRAY_BUFFER\s*,\s*null\s*\)/.test(html), "unbind ARRAY_BUFFER before TF write");
 check(/cos\(n \* PI \* px\) \* Math\.cos\(m \* PI \* py\)/.test(html)
   || /cos\(n \* PI \* px\)/.test(html), "JS cosine-difference field");
 check(/cnx \* cmy - cmx \* cny/.test(html), "GLSL cosine-difference formula");
