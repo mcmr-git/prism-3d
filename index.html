@@ -3,432 +3,137 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#05030a">
-  <meta name="description" content="PRISM / Event Horizon — a real-time Schwarzschild observatory.">
-  <title>PRISM / Event Horizon</title>
-
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='14' fill='none' stroke='%23d9a66d' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%2305030a'/%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%23d9a66d' stroke-width='.6' opacity='.5'/%3E%3C/svg%3E">
+  <meta name="theme-color" content="#050505">
+  <title>PRISM / Cymatics</title>
   <style>
-    :root {
-      --gold: #d9a66d;
-      --ivory: #f3ead8;
-      --void: #05030a;
-      --dim: rgba(243, 234, 216, 0.42);
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      height: 100%;
-      overflow: hidden;
-      background: var(--void);
-      color: var(--ivory);
-      font-family: ui-monospace, "IBM Plex Mono", monospace;
-      letter-spacing: 0.14em;
-      cursor: crosshair;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    canvas {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
-      touch-action: none;
-    }
-    #grain {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.07;
-      mix-blend-mode: overlay;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-      z-index: 2;
-    }
-    #vignette {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 3;
-      background: radial-gradient(ellipse at center, transparent 42%, rgba(5, 3, 10, 0.55) 100%);
-    }
+    html, body { margin: 0; height: 100%; background: #050505; overflow: hidden; cursor: grab; }
+    body.drag { cursor: grabbing; }
+    canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
     #hud {
-      position: fixed;
-      inset: 0;
-      z-index: 5;
-      padding: max(22px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 1.2s ease;
+      position: fixed; inset: 0; pointer-events: none;
+      font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: rgba(232, 196, 140, 0.72);
+      letter-spacing: 0.14em;
+      padding: 18px 20px;
     }
-    #hud.on { opacity: 1; }
-    .top {
-      display: flex;
-      justify-content: flex-end;
-      gap: 24px;
-      align-items: flex-start;
-    }
-    .clock {
-      text-align: right;
-      font-size: 10px;
-      color: var(--dim);
-      letter-spacing: 0.2em;
-    }
-    .clock b {
-      display: block;
-      margin-top: 8px;
-      color: var(--ivory);
-      font-size: 18px;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-    }
-    .clock b span { color: var(--gold); }
-    .bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-    .tele {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-      pointer-events: none;
-      padding: 10px 12px;
-      border-radius: 18px;
-      background: rgba(12, 10, 16, 0.28);
-      backdrop-filter: blur(26px) saturate(190%) brightness(1.35);
-      -webkit-backdrop-filter: blur(26px) saturate(190%) brightness(1.35);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.22),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-        0 18px 40px rgba(0, 0, 0, 0.28);
-    }
-    .tele span {
-      min-width: 88px;
-      padding: 6px 12px;
-      font-size: 9px;
-      color: var(--dim);
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-    }
-    .tele b {
-      display: block;
-      margin-top: 5px;
-      color: var(--ivory);
-      font-size: 13px;
-      letter-spacing: 0.1em;
-      font-weight: 500;
-    }
-    .hint {
-      font-size: 9px;
-      color: var(--dim);
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .audio-wrap {
-      pointer-events: auto;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
-    }
-    button.audio {
-      pointer-events: auto;
-      cursor: pointer;
-      background: rgba(12, 10, 16, 0.4);
-      color: var(--ivory);
-      border: 0;
-      border-radius: 999px;
-      padding: 10px 16px;
-      font: 500 10px/1 ui-monospace, "IBM Plex Mono", monospace;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      backdrop-filter: blur(26px) saturate(190%) brightness(1.35);
-      -webkit-backdrop-filter: blur(26px) saturate(190%) brightness(1.35);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.22),
-        inset 0 0 0 1px rgba(217, 166, 109, 0.35);
-    }
-    button.audio:hover { color: var(--gold); }
-    #wave {
-      height: 22px;
-      width: 108px;
-      display: flex;
-      align-items: flex-end;
-      gap: 2px;
-      justify-content: flex-end;
-    }
-    #wave i {
-      display: block;
-      width: 2px;
-      background: var(--gold);
-      opacity: 0.85;
-      height: 3px;
-    }
-    .lb {
-      position: fixed;
-      left: 0; right: 0;
-      height: 16vh;
-      background: #020107;
-      z-index: 7;
-      pointer-events: none;
-      transition: height 1.6s cubic-bezier(.22,1,.36,1);
-    }
-    .lb.top { top: 0; }
-    .lb.bot { bottom: 0; }
-    body.live .lb { height: 0; }
+    #hud b { color: #f0d7a8; font-weight: 500; }
+    .tl { position: absolute; top: 18px; left: 20px; }
+    .tr { position: absolute; top: 18px; right: 20px; text-align: right; }
+    .bl { position: absolute; bottom: 18px; left: 20px; opacity: 0.45; font-size: 10px; }
     #fail {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-      z-index: 20;
-      font-size: 13px;
-      letter-spacing: 0.08em;
-      line-height: 1.6;
-    }
-    @media (max-width: 720px) {
-      .tele span { min-width: 72px; padding: 4px 8px; }
-      .clock { display: none; }
-      .hint { max-width: 100%; }
-      .audio-wrap { width: 100%; align-items: stretch; }
-      button.audio { width: 100%; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      #hud { opacity: 1; }
-      .lb { height: 0; }
+      position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+      color: #e8c48c; font: 13px/1.5 ui-monospace, monospace; padding: 40px;
     }
   </style>
 </head>
 <body>
   <canvas id="c"></canvas>
-  <div id="grain"></div>
-  <div id="vignette"></div>
-  <i class="lb top"></i>
-  <i class="lb bot"></i>
   <div id="hud">
-    <div class="top">
-      <div class="clock">
-        Proper time τ
-        <b id="tau">00:00.<span>00</span></b>
-        <div style="margin-top:14px">Radius <b id="rad" style="font-size:13px;margin-top:4px">16.2 Rs</b></div>
-        <div style="margin-top:10px">Redshift z <b id="zed" style="font-size:13px;margin-top:4px">0.032</b></div>
-        <div style="margin-top:10px">Domain <b id="layer" style="font-size:12px;margin-top:4px;max-width:22em;line-height:1.35;letter-spacing:0.08em">3D Chladni Nodal Surfaces</b></div>
-        <div style="margin-top:10px">Mode (m,n,l) <b id="modes" style="font-size:13px;margin-top:4px">2 · 3 · 1</b></div>
-        <div style="margin-top:10px">Pressure <b id="pascals" style="font-size:13px;margin-top:4px">0 Pa</b></div>
-      </div>
-    </div>
-    <div class="bottom">
-      <div>
-        <div class="hint" id="hint">Drag to orbit · scroll to descend · click to drop mass</div>
-        <div class="tele">
-          <span>FPS<b id="fps">—</b></span>
-          <span>Particles<b id="pc">—</b></span>
-          <span>Worlds<b id="pr">—</b></span>
-          <span>Steps<b id="st">—</b></span>
-          <span>Pulse<b id="pu">0.00</b></span>
-          <span>RMS<b id="rms">0.00</b></span>
-          <span>Flux<b id="flux">0.00</b></span>
-        </div>
-      </div>
-      <div class="audio-wrap">
-        <button class="audio" id="au" type="button">[ Audio // Initialize ]</button>
-        <div id="wave"></div>
-        <div id="bands" style="display:flex;gap:3px;margin-top:4px;height:18px;align-items:flex-end">
-          <i data-b="SubBass" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
-          <i data-b="Bass" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
-          <i data-b="LowMid" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
-          <i data-b="Mid" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
-          <i data-b="HighMid" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
-          <i data-b="Air" style="width:8px;background:#d9a66d;display:block;height:2px"></i>
-        </div>
-        <button class="audio" id="mic" type="button" style="margin-top:6px">[ Mic // Off ]</button>
-      </div>
-    </div>
+    <div class="tl">Hz<br><b id="hz">440.0</b></div>
+    <div class="tr">Modal Mode (m, n)<br><b id="mode">1, 2</b></div>
+    <div class="bl">N <b id="count">131072</b> · click audio · scroll frequency</div>
   </div>
   <div id="fail"></div>
   <script id="prism-core">
   var PRISM = (function () {
-    var DOMAINS = [
-      { id: 1, name: "3D Chladni Nodal Surfaces", m: 2, n: 3, l: 1, ratios: [1, 1.5, 2] },
-      { id: 2, name: "Acoustic Levitation Manifold", m: 3, n: 2, l: 1, ratios: [1, 1.25, 2.5] },
-      { id: 3, name: "Fluid Faraday Wave Turbulence", m: 4, n: 2, l: 0, ratios: [1, 1.333, 2] },
-      { id: 4, name: "Sonoluminescence Plasma Core", m: 1, n: 1, l: 0, ratios: [1, 2.01, 3.01] },
-      { id: 5, name: "Quantum Acoustic Phonon Lattice", m: 5, n: 4, l: 2, ratios: [1, 1.414, 1.732] },
-      { id: 6, name: "Non-Euclidean 4D Cymatic Hypersphere", m: 3, n: 3, l: 3, ratios: [1, 1.618, 2.618] },
-      { id: 7, name: "Gravitational Wave Quadrupole Ripple", m: 2, n: 2, l: 2, ratios: [1, 1.5, 2.5] },
-      { id: 8, name: "The Infinite Sonic Singularity", m: 0, n: 1, l: 0, ratios: [1, 1.01, 1.03] }
-    ];
-    var N = 8;
-    function wrapUnit(x, n) {
-      var y = x % n;
-      if (y < 0) y += n;
-      if (y >= n) y = 0;
-      return y;
+    var PI = Math.PI;
+    var COUNT = 131072;
+    var L = 2;
+    var HZ_MIN = 20;
+    var HZ_MAX = 20000;
+    function clamp(x, a, b) { return x < a ? a : (x > b ? b : x); }
+    function chladniField(x, y, z, m, n, l, box) {
+      box = box == null ? L : box;
+      var px = x / box, py = y / box, pz = z / box;
+      return Math.cos(n * PI * px) * Math.cos(m * PI * py)
+           - Math.cos(m * PI * px) * Math.cos(n * PI * py);
     }
-    function wrapDescent(d) {
-      return wrapUnit(d - 1, N);
+    function chladniZ(z, l, box) {
+      box = box == null ? L : box;
+      return Math.cos(l * PI * z / box);
     }
-    function mapDescent(d) {
-      var x = wrapDescent(d);
-      var i0 = Math.floor(x + 1e-15);
-      if (i0 >= N) i0 = 0;
-      var blend = x - i0;
-      if (blend < 0) blend = 0;
-      if (blend > 1) blend = 1;
-      var i1 = (i0 + 1) % N;
-      var a = DOMAINS[i0];
-      var b = DOMAINS[i1];
-      return {
-        unit: x,
-        tierIndex: a.id,
-        domainIndex: a.id,
-        nextIndex: b.id,
-        blend: blend,
-        name: a.name,
-        nextName: b.name,
-        m: a.m + (b.m - a.m) * blend,
-        n: a.n + (b.n - a.n) * blend,
-        l: a.l + (b.l - a.l) * blend,
-        modes: [a.m, a.n, a.l]
-      };
+    function hzFromT(t) {
+      t = clamp(t, 0, 1);
+      return HZ_MIN * Math.pow(HZ_MAX / HZ_MIN, t);
     }
-    function lerp(a, b, t) { return a + (b - a) * t; }
-    function hzOfBin(i, sampleRate, fftSize) {
-      return i * sampleRate / fftSize;
+    function tFromHz(hz) {
+      hz = clamp(hz, HZ_MIN, HZ_MAX);
+      return Math.log(hz / HZ_MIN) / Math.log(HZ_MAX / HZ_MIN);
     }
-    function analyzeAudio(freqBins, timeSamples, opts) {
-      opts = opts || {};
-      var sr = opts.sampleRate || 44100;
-      var fftSize = opts.fftSize || (freqBins.length * 2);
-      var prev = opts.prevSpectrum || null;
-      var named = {
-        SubBass: 0, Bass: 0, LowMid: 0, Mid: 0, HighMid: 0, Air: 0
-      };
-      var counts = {
-        SubBass: 0, Bass: 0, LowMid: 0, Mid: 0, HighMid: 0, Air: 0
-      };
-      var i, hz, mag, key;
-      for (i = 0; i < freqBins.length; i++) {
-        hz = hzOfBin(i, sr, fftSize);
-        mag = freqBins[i];
-        if (mag > 1.5) mag = mag / 255;
-        if (hz >= 20 && hz < 60) key = "SubBass";
-        else if (hz >= 60 && hz < 250) key = "Bass";
-        else if (hz >= 250 && hz < 500) key = "LowMid";
-        else if (hz >= 500 && hz < 2000) key = "Mid";
-        else if (hz >= 2000 && hz < 6000) key = "HighMid";
-        else if (hz >= 6000 && hz < 20000) key = "Air";
-        else continue;
-        named[key] += mag;
-        counts[key] += 1;
-      }
-      for (key in named) {
-        named[key] = counts[key] ? named[key] / counts[key] : 0;
-      }
-      var rms = 0, peak = 0;
-      if (timeSamples && timeSamples.length) {
-        for (i = 0; i < timeSamples.length; i++) {
-          var s = timeSamples[i];
-          if (s > 1.5) s = (s - 128) / 128;
-          rms += s * s;
-          var a = s < 0 ? -s : s;
-          if (a > peak) peak = a;
+    function modePairs() {
+      var pairs = [];
+      for (var s = 3; s <= 16; s++) {
+        for (var m = 1; m < s; m++) {
+          var n = s - m;
+          if (m < n) pairs.push([m, n]);
         }
-        rms = Math.sqrt(rms / timeSamples.length);
       }
-      var transient = Math.max(0, peak - rms * 1.5);
-      var flux = 0;
-      if (prev && prev.length === freqBins.length) {
-        for (i = 0; i < freqBins.length; i++) {
-          var a0 = freqBins[i], b0 = prev[i];
-          if (a0 > 1.5) a0 /= 255;
-          if (b0 > 1.5) b0 /= 255;
-          var df = a0 - b0;
-          if (df > 0) flux += df;
-        }
-        flux /= freqBins.length;
-      }
-      var bands64 = [];
-      var group = Math.max(1, Math.floor(freqBins.length / 64));
-      for (i = 0; i < 64; i++) {
-        var acc = 0, c = 0, j;
-        for (j = 0; j < group; j++) {
-          var idx = i * group + j;
-          if (idx >= freqBins.length) break;
-          mag = freqBins[idx];
-          if (mag > 1.5) mag /= 255;
-          acc += mag; c++;
-        }
-        bands64.push(c ? acc / c : 0);
-      }
-      var pascals = rms * 20;
+      return pairs;
+    }
+    var PAIRS = modePairs();
+    function modesFromHz(hz) {
+      var t = tFromHz(hz);
+      var idx = Math.min(PAIRS.length - 1, Math.floor(t * PAIRS.length));
+      if (idx < 0) idx = 0;
+      var p = PAIRS[idx];
+      var l = 1 + Math.floor(t * 5);
+      if (l < 1) l = 1;
+      if (l > 5) l = 5;
+      return { m: p[0], n: p[1], l: l };
+    }
+    function fieldGrad(x, y, z, m, n, l, box) {
+      var e = 0.002;
+      var f = chladniField(x, y, z, m, n, l, box);
       return {
-        SubBass: named.SubBass,
-        Bass: named.Bass,
-        LowMid: named.LowMid,
-        Mid: named.Mid,
-        HighMid: named.HighMid,
-        Air: named.Air,
-        rms: rms,
-        peak: peak,
-        transient: transient,
-        flux: flux,
-        pascals: pascals,
-        bands64: bands64
+        f: f,
+        gx: (chladniField(x + e, y, z, m, n, l, box) - f) / e,
+        gy: (chladniField(x, y + e, z, m, n, l, box) - f) / e,
+        gz: (chladniZ(z + e, l, box) - chladniZ(z, l, box)) / e
       };
     }
-    function droneForDomain(d) {
-      var m = mapDescent(d);
-      var a = DOMAINS[m.domainIndex - 1];
-      var b = DOMAINS[m.nextIndex - 1];
-      var t = m.blend;
-      var fund = lerp(36 + a.id * 4, 36 + b.id * 4, t);
-      if (m.domainIndex >= 7) fund = lerp(28, 22, t);
-      var r0 = lerp(a.ratios[0], b.ratios[0], t);
-      var r1 = lerp(a.ratios[1], b.ratios[1], t);
-      var r2 = lerp(a.ratios[2], b.ratios[2], t);
-      var noise = m.domainIndex >= 8 ? lerp(0.04, 0.16, t) : (m.domainIndex >= 6 ? 0.05 : 0.02);
-      var drone = m.domainIndex <= 2 ? 0.2 : (m.domainIndex >= 8 ? 0.12 : 0.1);
-      return {
-        subHz: fund * r0,
-        droneHz: fund * r1,
-        fmHz: fund * r2 * 4,
-        fmGain: m.domainIndex >= 5 && m.domainIndex <= 6 ? 0.05 : 0.012,
-        droneGain: drone,
-        noiseGain: noise,
-        filterHz: 180 + m.domainIndex * 160 + t * 80,
-        beatHz: Math.abs(fund * (r1 - r0)),
-        ratios: [r0, r1, r2],
-        domainIndex: m.domainIndex,
-        blend: t
-      };
-    }
-    function audioForDescent(d) { return droneForDomain(d); }
-    function distForZoom(d) {
-      var x = wrapDescent(d);
-      var u = 1 - x / 8;
-      if (u < 0) u = 0;
-      if (u > 1) u = 1;
-      return 3.2 + 22 * Math.pow(u, 1.25);
+    function stepParticle(state, params) {
+      params = params || {};
+      var m = params.m, n = params.n, l = params.l == null ? 1 : params.l;
+      var box = params.L == null ? L : params.L;
+      var dt = params.dt == null ? 0.016 : params.dt;
+      var attract = params.attract == null ? 2.4 : params.attract;
+      var damp = params.damp == null ? 0.94 : params.damp;
+      var jitter = params.jitter == null ? 0.002 : params.jitter;
+      var scatter = params.scatter == null ? 0 : params.scatter;
+      var zPull = params.zPull == null ? 1.1 : params.zPull;
+      var g = fieldGrad(state.x, state.y, state.z, m, n, l, box);
+      var fz = chladniZ(state.z, l, box);
+      state.vx -= attract * g.f * g.gx * dt;
+      state.vy -= attract * g.f * g.gy * dt;
+      state.vz -= zPull * fz * g.gz * dt;
+      state.vx *= damp;
+      state.vy *= damp;
+      state.vz *= damp;
+      var j = jitter * (1 + scatter * 8);
+      state.vx += (Math.random() - 0.5) * j;
+      state.vy += (Math.random() - 0.5) * j;
+      state.vz += (Math.random() - 0.5) * j;
+      state.x += state.vx * dt;
+      state.y += state.vy * dt;
+      state.z += state.vz * dt;
+      var h = box * 0.5;
+      if (state.x > h || state.x < -h) { state.x = clamp(state.x, -h, h); state.vx *= -0.4; }
+      if (state.y > h || state.y < -h) { state.y = clamp(state.y, -h, h); state.vy *= -0.4; }
+      if (state.z > h || state.z < -h) { state.z = clamp(state.z, -h, h); state.vz *= -0.4; }
+      return state;
     }
     return {
-      DOMAINS: DOMAINS,
-      TIERS: DOMAINS,
-      wrapDescent: wrapDescent,
-      mapDescent: mapDescent,
-      analyzeAudio: analyzeAudio,
-      droneForDomain: droneForDomain,
-      audioForDescent: audioForDescent,
-      distForZoom: distForZoom
+      COUNT: COUNT,
+      L: L,
+      HZ_MIN: HZ_MIN,
+      HZ_MAX: HZ_MAX,
+      chladniField: chladniField,
+      chladniZ: chladniZ,
+      hzFromT: hzFromT,
+      tFromHz: tFromHz,
+      modesFromHz: modesFromHz,
+      stepParticle: stepParticle,
+      fieldGrad: fieldGrad
     };
   })();
   if (typeof window !== "undefined") window.PRISM = PRISM;
@@ -439,10 +144,10 @@
     const canvas = document.getElementById("c");
     const failEl = document.getElementById("fail");
     const mobile = matchMedia("(pointer: coarse)").matches || innerWidth < 740;
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches
-      || /(?:\?|&)live=1(?:&|$)/.test(location.search);
+    const N = PRISM.COUNT;
+    const L = PRISM.L;
 
-    function showFail(msg) {
+    function fail(msg) {
       failEl.style.display = "flex";
       failEl.textContent = msg;
     }
@@ -450,910 +155,163 @@
     const gl = canvas.getContext("webgl2", {
       alpha: false,
       antialias: false,
-      depth: true,
-      powerPreference: "high-performance",
-      premultipliedAlpha: false
+      depth: false,
+      powerPreference: "high-performance"
     });
-    if (reduced) {
-      document.getElementById("hud").classList.add("on");
-      document.body.classList.add("live");
-    }
-
-    if (!gl) {
-      showFail("WebGL2 is required for PRISM. Enable it in your browser settings.");
-      return;
-    }
-
-    const extColor = gl.getExtension("EXT_color_buffer_float") || gl.getExtension("EXT_color_buffer_half_float");
-    const extLinear = gl.getExtension("OES_texture_float_linear");
-    const canHDR = !!(extColor && gl.getExtension("EXT_color_buffer_float"));
+    if (!gl) { fail("WebGL2 required."); return; }
 
     function compile(type, src, name) {
       const s = gl.createShader(type);
       gl.shaderSource(s, src);
       gl.compileShader(s);
       if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-        throw new Error((name || "shader") + "\n" + gl.getShaderInfoLog(s));
+        throw new Error(name + "\n" + gl.getShaderInfoLog(s));
       }
       return s;
     }
-    function makeProgram(vs, fs, name) {
+    function link(vs, fs, varyings) {
       const p = gl.createProgram();
-      gl.attachShader(p, compile(gl.VERTEX_SHADER, vs, name + " VS"));
-      gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs, name + " FS"));
+      gl.attachShader(p, vs);
+      if (fs) gl.attachShader(p, fs);
+      if (varyings) gl.transformFeedbackVaryings(p, varyings, gl.SEPARATE_ATTRIBS);
       gl.linkProgram(p);
       if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
-        throw new Error(name + " link\n" + gl.getProgramInfoLog(p));
+        throw new Error(gl.getProgramInfoLog(p));
       }
-      const u = {}, a = {};
-      const nu = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
-      for (let i = 0; i < nu; i++) {
+      const u = {};
+      const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+      for (let i = 0; i < n; i++) {
         const info = gl.getActiveUniform(p, i);
-        u[info.name.replace(/[0-9\[\]]+$/, "")] = gl.getUniformLocation(p, info.name);
         u[info.name] = gl.getUniformLocation(p, info.name);
       }
-      const na = gl.getProgramParameter(p, gl.ACTIVE_ATTRIBUTES);
-      for (let i = 0; i < na; i++) {
-        const info = gl.getActiveAttrib(p, i);
-        a[info.name] = gl.getAttribLocation(p, info.name);
-      }
-      return { p, u, a };
+      return { p, u };
     }
 
-    const VS_QUAD = `#version 300 es
-    in vec2 aPos;
-    out vec2 vUv;
-    void main(){
-      vUv = aPos * 0.5 + 0.5;
-      gl_Position = vec4(aPos, 0.0, 1.0);
-    }`;
-
-    const FS_BH = `#version 300 es
-    precision highp float;
-    in vec2 vUv;
-    out vec4 fragColor;
-    uniform vec2 uRes;
-    uniform vec3 uCamPos, uCamFwd, uCamRight, uCamUp;
-    uniform float uTime, uFov, uExposure, uPulse, uPulseAmp, uSteps, uCamDist, uFall, uDescent;
-    uniform float uSubBass, uBass, uLowMid, uMid, uHighMid, uAir, uRMS, uTransient, uFlux;
-    uniform vec3 uModes;
-
-    vec3 hsv2rgb(vec3 c){
-      vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
-      vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-      return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-    }
-    float hash13(vec3 p){
-      p = fract(p * 0.1031);
-      p += dot(p, p.yzx + 33.33);
-      return fract((p.x + p.y) * p.z);
-    }
-    vec3 blackbody(float t){
-      vec3 cold = vec3(0.35, 0.05, 0.015);
-      vec3 warm = vec3(1.0, 0.38, 0.08);
-      vec3 gold = vec3(1.0, 0.72, 0.38);
-      vec3 hot  = vec3(1.15, 0.95, 0.82);
-      vec3 c = mix(cold, warm, smoothstep(0.0, 0.28, t));
-      c = mix(c, gold, smoothstep(0.22, 0.62, t));
-      c = mix(c, hot,  smoothstep(0.55, 1.0, t));
-      return c;
-    }
-    vec3 starfield(vec3 dir){
-      vec3 col = vec3(0.004, 0.005, 0.012);
-      float band = exp(-pow(dir.y * 2.4, 2.0));
-      col += vec3(0.22, 0.18, 0.28) * band * 0.07;
-      col += vec3(0.55, 0.32, 0.12) * exp(-pow(dir.y * 1.4 - 0.15, 2.0) * 8.0) * 0.03;
-      for (int k = 0; k < 3; k++){
-        float scale = exp2(float(k) * 1.85 + 5.0);
-        vec3 p = dir * scale;
-        vec3 id = floor(p);
-        vec3 f = fract(p) - 0.5;
-        float n = hash13(id);
-        float br = smoothstep(0.93, 0.998, n);
-        float d2 = dot(f, f);
-        vec3 tint = mix(vec3(0.75, 0.85, 1.15), vec3(1.1, 0.85, 0.55), hash13(id + 4.2));
-        col += br * tint * exp(-d2 * 46.0) * (0.35 + 0.8 * hash13(id + 9.1));
-      }
-      return col;
-    }
-    vec3 galaxyBand(vec3 dir, float seed){
-      float d = dir.y * 0.94 + dir.x * 0.16;
-      float band = exp(-d * d * 22.0);
-      float a = atan(dir.z, dir.x) + seed;
-      float r = length(dir.xz);
-      float arm = 0.45 + 0.55 * sin(a * 2.0 + r * 8.0 + seed * 3.0);
-      float dust = 0.55 + 0.45 * sin(a * 5.0 - r * 13.0);
-      vec3 gold = vec3(1.0, 0.70, 0.36);
-      vec3 ash = vec3(0.28, 0.16, 0.12);
-      return mix(ash, gold, arm * dust) * band * 0.30;
-    }
-    vec3 distantGalaxies(vec3 dir){
-      vec3 col = vec3(0.0);
-      for (int i = 0; i < 5; i++){
-        float fi = float(i) + 1.7;
-        vec3 c = normalize(vec3(
-          hash13(vec3(fi, 0.2, 1.3)) * 2.0 - 1.0,
-          (hash13(vec3(fi, 4.1, 0.8)) - 0.5) * 0.85,
-          hash13(vec3(fi, 2.6, 7.2)) * 2.0 - 1.0
-        ));
-        float ang = 1.0 - clamp(dot(dir, c), -1.0, 1.0);
-        float core = exp(-ang * 1600.0);
-        float halo = exp(-ang * 220.0);
-        vec3 tint = mix(vec3(0.55, 0.48, 0.85), vec3(1.05, 0.72, 0.38), hash13(vec3(fi, 3.3, 9.1)));
-        col += tint * (core * 0.45 + halo * 0.035);
-      }
-      return col;
-    }
-    float fbm(vec3 p){
-      float a = 0.5, s = 0.0;
-      for (int i = 0; i < 4; i++){
-        s += a * hash13(floor(p) + fract(p.yzx * 13.1));
-        p = p * 2.03 + 0.17;
-        a *= 0.5;
-      }
-      return s;
-    }
-    float sdSphere(vec3 p, float r){ return length(p) - r; }
-    float sdTorus(vec3 p, vec2 t){
-      vec2 q = vec2(length(p.xz) - t.x, p.y);
-      return length(q) - t.y;
-    }
-    float sdCapsule(vec3 p, vec3 a, vec3 b, float r){
-      vec3 pa = p - a, ba = b - a;
-      float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-      return length(pa - ba * h) - r;
-    }
-    float smin(float a, float b, float k){
-      float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-      return mix(b, a, h) - k * h * (1.0 - h);
-    }
-    float j0(float x){
-      x = abs(x);
-      if (x < 8.0){
-        float y = x * x;
-        return 1.0 - y * 0.25 + y * y * 0.015625 - y * y * y * 0.000434;
-      }
-      return sqrt(0.63662 / x) * cos(x - 0.7854);
-    }
-    float j1(float x){
-      float ax = abs(x);
-      float s = x < 0.0 ? -1.0 : 1.0;
-      if (ax < 8.0){
-        float y = ax * ax;
-        return s * ax * (0.5 - y * 0.0625 + y * y * 0.002604);
-      }
-      return s * sqrt(0.63662 / ax) * cos(ax - 2.3562);
-    }
-    float jn(int n, float x){
-      if (n == 0) return j0(x);
-      if (n == 1) return j1(x);
-      if (abs(x) < 1e-4) return 0.0;
-      float jm2 = j0(x), jm1 = j1(x), j = jm1;
-      for (int k = 1; k < 6; k++){
-        if (k >= n) break;
-        j = float(2 * k) / x * jm1 - jm2;
-        jm2 = jm1; jm1 = j;
-      }
-      return j;
-    }
-    float legendP(int n, float x){
-      if (n <= 0) return 1.0;
-      if (n == 1) return x;
-      if (n == 2) return 0.5 * (3.0 * x * x - 1.0);
-      if (n == 3) return 0.5 * (5.0 * x * x * x - 3.0 * x);
-      return 0.125 * (35.0 * x * x * x * x - 30.0 * x * x + 3.0);
-    }
-    float assocP(int n, int m, float x){
-      float p = legendP(n, x);
-      if (m == 0) return p;
-      float s = sqrt(max(0.0, 1.0 - x * x));
-      if (m == 1 && n == 1) return -s;
-      if (m == 1 && n == 2) return -3.0 * x * s;
-      if (m == 2 && n == 2) return 3.0 * (1.0 - x * x);
-      return p * pow(s, float(m));
-    }
-    vec3 audioWarp(vec3 p){
-      float k = 0.12 + 0.35 * uBass + 0.2 * uMid;
-      p.x += k * sin(p.y * 1.7 + uTime * (2.0 + 4.0 * uLowMid)) * uSubBass;
-      p.z += k * cos(p.x * 1.3 + uTime * 1.6) * uHighMid;
-      p += normalize(p + vec3(0.001)) * uTransient * 0.8;
-      return p;
-    }
-    float deChladni(vec3 p){
-      p = audioWarp(p);
-      float r = length(p);
-      vec3 n = p / max(r, 1e-4);
-      float m = uModes.x, nn = uModes.y, l = uModes.z;
-      float R = jn(int(l + 0.5), (3.2 + 4.0 * uMid) * r * 0.55);
-      float T = assocP(int(nn + 0.5), int(min(m, 2.0) + 0.5), n.y);
-      float F = cos(m * atan(p.z, p.x));
-      float plate = cos(m * 3.1416 * p.x * 0.35) * cos(nn * 3.1416 * p.z * 0.35);
-      return abs(R * T * F + 0.35 * plate) - (0.045 + 0.08 * uRMS);
-    }
-    float deLevitate(vec3 p){
-      p = audioWarp(p);
-      float kz = 2.2 + 3.5 * uHighMid;
-      float trap = sin(kz * p.x) * sin(kz * p.y) * sin(kz * p.z);
-      float node = abs(trap) - (0.08 + 0.1 * uBass);
-      float grain = sdSphere(p - vec3(0.0, 0.0, 0.0), 0.15);
-      return smin(node, grain, 0.2);
-    }
-    float deFaraday(vec3 p){
-      p = audioWarp(p);
-      float rho = length(p.xz);
-      float k = 2.4 + 3.0 * uLowMid;
-      float h = 0.35 * (1.0 + uSubBass) * j0(k * rho) * cos(uTime * (6.0 + 8.0 * uBass));
-      float sub = 0.2 * j1(k * rho * 0.7) * cos(uTime * 3.1);
-      return p.y - (h + sub);
-    }
-    float deSono(vec3 p){
-      p = audioWarp(p);
-      float R = 1.1 - 0.85 * clamp(uTransient * 3.0 + 0.5 + 0.3 * sin(uTime * 12.0), 0.0, 1.0);
-      return abs(length(p) - max(R, 0.08)) - 0.04;
-    }
-    float dePhonon(vec3 p){
-      p = audioWarp(p);
-      vec3 q = mod(p + 1.15, 2.3) - 1.15;
-      float ac = sdSphere(q, 0.28 + 0.08 * sin(uTime * 4.0 + p.x));
-      float opt = sdSphere(q - vec3(0.55, 0.0, 0.0), 0.16);
-      float disp = 0.12 * sin(3.1416 * p.x) * sin(3.1416 * p.y) * (0.4 + uMid);
-      return smin(ac, opt, 0.15) + disp;
-    }
-    float deHypersphere(vec3 p){
-      p = audioWarp(p);
-      float w = sin(uTime * 0.7 + uAir * 6.0) * (1.2 + uRMS);
-      float r4 = sqrt(dot(p, p) + w * w);
-      float ang = atan(w, length(p));
-      float slice = legendP(int(uModes.y + 0.5), cos(ang)) * jn(int(uModes.z + 0.5), r4);
-      return abs(r4 - (2.4 + uBass)) - 0.08 + 0.05 * slice;
-    }
-    float deQuadrupole(vec3 p){
-      p = audioWarp(p);
-      float r = length(p);
-      float cth = p.y / max(r, 1e-4);
-      float P2 = legendP(2, cth);
-      float h = (0.15 + 0.55 * uSubBass) * P2 * sin(uTime * 2.2 + r * 0.4);
-      return sdTorus(p, vec2(2.8 + h * 2.0, 0.22 + 0.15 * uRMS));
-    }
-    float deSingularity(vec3 p){
-      p = audioWarp(p);
-      return abs(length(p) - 1.52) - (0.05 + 0.12 * uRMS);
-    }
-    float deTier(int id, vec3 p){
-      if (id == 0) return deChladni(p);
-      if (id == 1) return deLevitate(p);
-      if (id == 2) return deFaraday(p);
-      if (id == 3) return deSono(p);
-      if (id == 4) return dePhonon(p);
-      if (id == 5) return deHypersphere(p);
-      if (id == 6) return deQuadrupole(p);
-      return deSingularity(p);
-    }
-    float densTier(int id, vec3 p){
-      float d = deTier(id, p);
-      if (id == 0) return exp(-abs(d) * 7.0) * (0.2 + 0.6 * uMid);
-      if (id == 1) return exp(-abs(d) * 5.0) * (0.15 + uHighMid);
-      if (id == 2) return exp(-abs(d) * 4.0) * (0.2 + uLowMid);
-      if (id == 3) return exp(-abs(d) * 3.0) * (0.4 + 1.6 * uTransient) + 0.15 * uFlux;
-      if (id == 4) return exp(-max(d, 0.0) * 6.0) * 0.25;
-      if (id == 5) return exp(-abs(d) * 5.0) * (0.2 + uAir);
-      if (id == 6) return exp(-abs(d) * 4.5) * (0.18 + uSubBass);
-      return exp(-abs(d) * 3.5) * (0.3 + uRMS);
-    }
-    vec3 palTier(int id, vec3 p, vec3 n){
-      vec3 L = normalize(vec3(0.4, 0.7, 0.35));
-      float ndl = clamp(dot(n, L) * 0.5 + 0.5, 0.0, 1.0);
-      if (id == 0) return vec3(0.95, 0.78, 0.4) * ndl;
-      if (id == 1) return vec3(0.55, 0.85, 1.1) * ndl;
-      if (id == 2) return vec3(0.3, 0.7, 1.0) * (0.3 + ndl);
-      if (id == 3) return vec3(1.3, 0.85, 0.35) * (0.5 + 1.5 * uTransient);
-      if (id == 4) return mix(vec3(0.7, 0.9, 1.1), vec3(1.0, 0.5, 0.2), uMid) * ndl;
-      if (id == 5) return hsv2rgb(vec3(fract(0.6 + uAir * 0.2), 0.55, 0.9)) * ndl;
-      if (id == 6) return vec3(1.1, 0.72, 0.35) * ndl;
-      return vec3(1.2, 0.9, 0.55) * (0.4 + ndl + uRMS);
-    }
-    float deMix(vec3 p, int i0, int i1, float w){
-      return mix(deTier(i0, p), deTier(i1, p), w);
-    }
-    vec3 nrmMix(vec3 p, int i0, int i1, float w){
-      vec2 e = vec2(0.012, 0.0);
-      return normalize(vec3(
-        deMix(p + e.xyy, i0, i1, w) - deMix(p - e.xyy, i0, i1, w),
-        deMix(p + e.yxy, i0, i1, w) - deMix(p - e.yxy, i0, i1, w),
-        deMix(p + e.yyx, i0, i1, w) - deMix(p - e.yyx, i0, i1, w)
-      ));
-    }
-    float diskNoise(vec2 xz, float r, float t){
-      float a = atan(xz.y, xz.x);
-      float spiral = a * 2.4 + r * 0.55 - t * 1.35;
-      float arms = 0.52 + 0.48 * sin(spiral);
-      arms *= 0.6 + 0.4 * sin(a * 5.0 - t * 2.1 + r * 0.8);
-      float hotspots = pow(0.5 + 0.5 * sin(a * 9.0 + t * 3.4 - r * 1.6), 3.5);
-      float ripple = 0.82 + 0.18 * sin(r * 5.5 - t * 2.2);
-      return arms * ripple * (0.72 + 0.5 * hotspots);
-    }
-
-    const float RS = 1.0;
-    const float DISK_IN = 3.02;
-    const float DISK_OUT = 15.5;
-
-    void main(){
-      vec2 uv = (2.0 * gl_FragCoord.xy - uRes) / uRes.y;
-      vec3 rd = normalize(uCamFwd + uv.x * uCamRight * uFov + uv.y * uCamUp * uFov);
-      vec3 ro = uCamPos;
-      float xDes = mod(max(uDescent, 0.0), 8.0);
-      float i0f = floor(xDes);
-      float blend = smoothstep(0.0, 1.0, fract(xDes));
-      int i0 = int(i0f);
-      int i1 = int(mod(i0f + 1.0, 8.0));
-      float wellAmt = smoothstep(5.6, 6.4, xDes) + smoothstep(6.6, 7.2, xDes);
-      float lensAmt = wellAmt + uSubBass * 0.4;
-
-      vec3 pos = ro;
-      vec3 vel = rd;
-      vec3 Lvec = cross(pos, vel);
-      float L2 = dot(Lvec, Lvec);
-      vec3 col = vec3(0.0);
-      float transmit = 1.0;
-      float minR = length(pos);
-      bool captured = false;
-      int hits = 0;
-      int geoSteps = int(mix(8.0, uSteps, wellAmt + lensAmt * 0.5));
-
-      for (int i = 0; i < 120; i++){
-        if (i >= geoSteps) break;
-        float r = length(pos);
-        minR = min(minR, r);
-        if (r < 1.02) { captured = true; break; }
-        if (r > 110.0 && i > 4) break;
-        float h = 0.16 * clamp(r - 0.42, 0.05, 3.4);
-        float r5 = r * r * r * r * r;
-        vec3 acc = (-1.5 * RS * L2 / max(r5, 1e-6)) * pos * lensAmt;
-        vec3 p1 = pos + vel * h + 0.5 * acc * h * h;
-        float r1 = length(p1);
-        vec3 acc1 = (-1.5 * RS * L2 / max(r1 * r1 * r1 * r1 * r1, 1e-6)) * p1 * lensAmt;
-        vec3 prev = pos;
-        vel = vel + 0.5 * (acc + acc1) * h;
-        pos = p1;
-        if (wellAmt > 0.05 && prev.y * pos.y < 0.0 && hits < 3){
-          float tHit = prev.y / (prev.y - pos.y);
-          vec3 hit = mix(prev, pos, clamp(tHit, 0.0, 1.0));
-          float rho = length(hit.xz);
-          if (rho > DISK_IN && rho < DISK_OUT){
-            hits++;
-            float xr = DISK_IN / rho;
-            float temp = pow(DISK_IN / rho, 0.75) * pow(max(0.001, 1.0 - sqrt(xr)), 0.25);
-            temp *= sqrt(max(0.02, 1.0 - RS / rho));
-            float vk = sqrt(0.5 / rho);
-            vec3 tng = normalize(vec3(-hit.z, 0.0, hit.x));
-            float ndotv = dot(normalize(-vel), tng * vk);
-            float dop = sqrt(max(0.05, 1.0 - vk * vk)) / max(0.12, 1.0 - ndotv);
-            float beam = pow(clamp(dop, 0.25, 3.6), 3.2);
-            float n = diskNoise(hit.xz, rho, uTime);
-            float edge = smoothstep(DISK_IN, DISK_IN + 0.55, rho) * smoothstep(DISK_OUT, DISK_OUT - 3.2, rho);
-            float pulse = exp(-abs(rho - uPulse) * 3.4) * uPulseAmp;
-            vec3 add = blackbody(clamp(temp * 1.35, 0.0, 1.0)) * n * edge * beam * 2.4 * (0.85 + pulse * 2.4);
-            col += transmit * add * wellAmt;
-            transmit *= 1.0 - 0.22 * n * edge * wellAmt;
-          }
-        }
-      }
-
-      vec3 marchDir = normalize(mix(rd, vel, clamp(lensAmt, 0.0, 1.0)));
-      vec3 marchRo = captured ? pos : ro;
-      float t = captured ? 0.15 : 0.0;
-      int volSteps = int(mix(36.0, 56.0, clamp(uSteps / 72.0, 0.0, 1.0)));
-      bool hitSolid = false;
-      vec3 hitP = marchRo;
-      for (int i = 0; i < 64; i++){
-        if (i >= volSteps) break;
-        vec3 p = marchRo + marchDir * t;
-        float d = deMix(p, i0, i1, blend);
-        float den = mix(densTier(i0, p), densTier(i1, p), blend);
-        vec3 emit = mix(palTier(i0, p, normalize(p + vec3(0.0, 1.0, 0.0))), palTier(i1, p, normalize(p + vec3(0.0, 1.0, 0.0))), blend);
-        float dt = max(abs(d) * 0.45, 0.07);
-        col += transmit * emit * den * dt * 1.35;
-        transmit *= exp(-den * dt * 1.8);
-        if (d < 0.012){
-          hitSolid = true;
-          hitP = p;
-          break;
-        }
-        t += dt;
-        if (transmit < 0.02 || t > 85.0) break;
-      }
-      if (hitSolid){
-        vec3 n = nrmMix(hitP, i0, i1, blend);
-        vec3 alb = mix(palTier(i0, hitP, n), palTier(i1, hitP, n), blend);
-        vec3 L = normalize(vec3(0.35, 0.8, 0.4));
-        float ndl = clamp(dot(n, L), 0.0, 1.0);
-        float spec = pow(max(dot(reflect(-L, n), -marchDir), 0.0), 24.0);
-        col += transmit * (alb * (0.18 + 0.85 * ndl) + vec3(1.0, 0.9, 0.75) * spec * 0.35);
-        transmit *= 0.08;
-      }
-
-      float ring = exp(-abs(minR - 1.52) * 18.0);
-      col += ring * vec3(1.35, 0.92, 0.52) * (0.2 + 1.15 * wellAmt);
-      if (!captured) col += transmit * starfield(normalize(vel));
-      else col += transmit * starfield(normalize(vel)) * 0.35;
-
-      col *= uExposure;
-      col = col / (1.0 + col * 0.42);
-      fragColor = vec4(max(col, 0.0), 1.0);
-    }`;
-
-    const FS_BRIGHT = `#version 300 es
-    precision highp float;
-    in vec2 vUv;
-    out vec4 fragColor;
-    uniform sampler2D uTex;
-    void main(){
-      vec3 c = texture(uTex, vUv).rgb;
-      float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-      float k = smoothstep(0.82, 1.45, l);
-      fragColor = vec4(c * k, 1.0);
-    }`;
-
-    const FS_BLUR = `#version 300 es
-    precision highp float;
-    in vec2 vUv;
-    out vec4 fragColor;
-    uniform sampler2D uTex;
-    uniform vec2 uDir;
-    void main(){
-      vec2 px = uDir;
-      vec3 c = texture(uTex, vUv).rgb * 0.227027;
-      c += texture(uTex, vUv + px).rgb * 0.1945946;
-      c += texture(uTex, vUv - px).rgb * 0.1945946;
-      c += texture(uTex, vUv + px * 2.0).rgb * 0.1216216;
-      c += texture(uTex, vUv - px * 2.0).rgb * 0.1216216;
-      c += texture(uTex, vUv + px * 3.0).rgb * 0.054054;
-      c += texture(uTex, vUv - px * 3.0).rgb * 0.054054;
-      c += texture(uTex, vUv + px * 4.0).rgb * 0.016216;
-      c += texture(uTex, vUv - px * 4.0).rgb * 0.016216;
-      fragColor = vec4(c, 1.0);
-    }`;
-
-    const FS_COMP = `#version 300 es
-    precision highp float;
-    in vec2 vUv;
-    out vec4 fragColor;
-    uniform sampler2D uScene, uBloom, uStreak;
-    uniform vec2 uRes;
-    uniform float uTime, uCA;
-    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-    void main(){
-      vec2 uv = vUv;
-      vec2 c = uv - 0.5;
-      float r = length(c);
-      vec2 dir = c / (r + 1e-4);
-      float ca = uCA * (0.0015 + 0.006 * r * r);
-      vec3 col;
-      col.r = texture(uScene, uv + dir * ca * 1.4).r;
-      col.g = texture(uScene, uv).g;
-      col.b = texture(uScene, uv - dir * ca * 1.8).b;
-      vec3 bloom = texture(uBloom, uv).rgb;
-      vec3 streak = texture(uStreak, uv).rgb;
-      col += bloom * 0.52 + streak * 0.38;
-      float vig = smoothstep(1.25, 0.25, r);
-      col *= vig;
-      float g = (hash(gl_FragCoord.xy + fract(uTime) * 17.0) - 0.5) * 0.045;
-      col += g;
-      col = pow(max(col, 0.0), vec3(0.92));
-      fragColor = vec4(col, 1.0);
-    }`;
-
-    const VS_PT = `#version 300 es
-    in vec4 aData;
-    in vec3 aCol;
-    uniform mat4 uMVP;
-    uniform float uTime, uPulse, uPulseAmp, uCamDist, uFall;
-    uniform vec3 uMass;
-    uniform float uMassG, uPoint;
-    out vec3 vCol;
-    void main(){
-      float r = aData.x;
-      float y = aData.y;
-      float phase = aData.z;
-      float kind = aData.w;
-      float omega = (kind < 0.5) ? (0.55 / sqrt(r + 0.2)) : (kind < 1.5 ? 0.045 : 0.85 / sqrt(r + 0.15));
-      float a = phase + uTime * omega;
-      vec3 pos = vec3(cos(a) * r, y, sin(a) * r);
-      float shock = exp(-abs(length(pos.xz) - uPulse) * 2.8) * uPulseAmp;
-      pos.y += shock * 0.28;
-      vec3 d = pos - uMass;
-      float d2 = dot(d, d) + 0.55;
-      pos += d * (-uMassG / d2);
-      float vis = 1.0;
-      if (kind > 0.5 && kind < 1.5) vis = smoothstep(11.0, 22.0, uCamDist);
-      else if (kind > 1.5) vis = smoothstep(12.0, 5.2, uCamDist);
-      else vis = mix(0.45, 1.0, smoothstep(40.0, 16.0, uCamDist));
-      vec3 tint = aCol;
-      if (uFall > 0.12){
-        float id = mod(floor(uFall), 6.0);
-        vis = mix(vis, 0.85, smoothstep(0.12, 0.55, uFall));
-        if (id < 0.5) tint = mix(aCol, vec3(1.0, 0.72, 0.38), 0.55);
-        else if (id < 1.5) tint = vec3(1.1, 0.38, 0.08);
-        else if (id < 2.5) tint = vec3(0.95, 0.78, 0.52);
-        else if (id < 3.5) tint = vec3(1.0, 0.68, 0.32);
-        else if (id < 4.5) tint = vec3(0.35, 0.4, 0.55);
-        else tint = vec3(0.4, 0.75, 1.05);
-        if (id > 0.5 && id < 1.5) pos *= 0.55;
-      }
-      gl_Position = uMVP * vec4(pos, 1.0);
-      float size = (kind < 0.5) ? 2.2 : (kind < 1.5 ? 2.8 : 1.7);
-      size += shock * 3.2;
-      gl_PointSize = vis * size * uPoint / max(gl_Position.w, 0.4);
-      vCol = tint + shock * vec3(1.0, 0.5, 0.14);
-      vCol *= vis * 0.48 / (0.16 + length(pos) * 0.045);
-    }`;
-
-    const FS_PT = `#version 300 es
-    precision mediump float;
-    in vec3 vCol;
-    out vec4 o;
-    void main(){
-      vec2 p = gl_PointCoord * 2.0 - 1.0;
-      float d = dot(p, p);
-      if (d > 1.0) discard;
-      float g = exp(-d * 3.4);
-      o = vec4(vCol * g, 1.0);
-    }`;
-
-    const VS_PRISM = `#version 300 es
+    const VS_UPDATE = `#version 300 es
     in vec3 aPos;
-    in vec3 aNrm;
-    in vec4 aInstA;
-    in vec4 aInstB;
-    uniform mat4 uMVP;
-    uniform float uTime, uFall;
-    uniform vec3 uCamPos, uCamFwd, uCamRight, uCamUp;
-    out vec3 vN, vW, vColHint;
-    void main(){
-      float r = aInstA.x;
-      float phase = aInstA.y;
-      float y = aInstA.z;
-      float scale = aInstA.w;
-      float spin = aInstB.x;
-      float tilt = aInstB.y;
-      float seed = aInstB.z;
-      float omega = 0.11 / sqrt(r + 0.8);
-      float a = phase + uTime * omega;
-      vec3 orbit = vec3(cos(a) * r, y, sin(a) * r);
-      float c = cos(uTime * spin * 0.15), s = sin(uTime * spin * 0.15);
-      float ct = cos(tilt), st = sin(tilt);
-      mat3 rotY = mat3(c,0.0,s, 0.0,1.0,0.0, -s,0.0,c);
-      mat3 rotX = mat3(1.0,0.0,0.0, 0.0,ct,-st, 0.0,st,ct);
-      mat3 R = rotY * rotX;
-      float fly = smoothstep(0.1, 0.55, uFall);
-      float id = mod(floor(uFall), 6.0);
-      float lane = seed * 6.283 + floor(uFall) * 0.7;
-      float along = fract(seed * 2.17 + uFall * 0.42);
-      float zDist = mix(7.5, -2.2, along);
-      float rad = 0.55 + seed * 1.9;
-      vec3 flyPos = uCamPos + uCamFwd * zDist + uCamRight * cos(lane) * rad + uCamUp * sin(lane) * rad * 0.45;
-      float sc = scale;
-      float keep = 1.0;
-      if (id > 1.5 && id < 2.5){
-        if (seed < 0.18){
-          flyPos = uCamPos + uCamFwd * 3.6 + uCamRight * 2.05 + uCamUp * -0.45;
-          sc = mix(scale, 0.78, fly);
-        } else if (seed < 0.32){
-          flyPos = uCamPos + uCamFwd * 5.2 + uCamRight * -1.4 + uCamUp * 0.6;
-          sc = mix(scale, 0.12, fly);
-        } else keep = 0.0;
-      } else if (id > 0.5 && id < 1.5){
-        sc = mix(scale, 0.08 + seed * 0.11, fly);
-      } else if (id > 2.5 && id < 3.5){
-        keep = seed < 0.22 ? 1.0 : 0.0;
-        sc = mix(scale, 0.12 + seed * 0.1, fly);
-      } else if (id > 3.5 && id < 4.5){
-        keep = seed < 0.16 ? 1.0 : 0.0;
-        sc = mix(scale, 0.16, fly);
-        flyPos = uCamPos + uCamFwd * 4.5 + uCamRight * 1.8 + uCamUp * 0.5;
-      } else if (id > 4.5){
-        sc = mix(scale, 0.13 + seed * 0.16, fly);
-        keep = seed < 0.55 ? 1.0 : 0.0;
-      } else {
-        sc = mix(scale, 0.14 + seed * 0.2, fly);
-      }
-      sc *= keep;
-      if (keep < 0.5 && fly > 0.45){
-        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-        vW = vec3(0.0);
-        vN = vec3(0.0, 1.0, 0.0);
-        vColHint = vec3(0.0);
-        return;
-      }
-      vec3 wp = mix(orbit, flyPos, fly) + R * (aPos * max(sc, 0.001));
-      vW = wp;
-      vN = normalize(R * aNrm);
-      vColHint = vec3(seed, sc, id);
-      gl_Position = uMVP * vec4(wp, 1.0);
-    }`;
-
-    const FS_PRISM = `#version 300 es
-    precision highp float;
-    in vec3 vN, vW, vColHint;
-    uniform vec3 uCamPos;
-    uniform float uTime, uPulseAmp, uFall;
-    out vec4 o;
-    float hash13(vec3 p){
-      p = fract(p * 0.1031);
-      p += dot(p, p.yzx + 33.33);
-      return fract((p.x + p.y) * p.z);
+    in vec3 aVel;
+    out vec3 vPos;
+    out vec3 vVel;
+    uniform float uM, uN, uL, uBox, uDt, uAttract, uDamp, uJitter, uScatter, uZPull, uTime;
+    float hash(vec3 p){
+      return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
+    }
+    float fieldXY(vec3 p){
+      float px = p.x / uBox, py = p.y / uBox;
+      float cnx = cos(uN * 3.14159265 * px);
+      float cmx = cos(uM * 3.14159265 * px);
+      float cny = cos(uN * 3.14159265 * py);
+      float cmy = cos(uM * 3.14159265 * py);
+      return cnx * cmy - cmx * cny;
+    }
+    float fieldZ(vec3 p){
+      return cos(uL * 3.14159265 * p.z / uBox);
     }
     void main(){
-      vec3 n = normalize(vN);
-      vec3 v = normalize(uCamPos - vW);
-      vec3 L = normalize(-vW);
-      float ndl = max(0.0, dot(n, L));
-      float wrap = clamp(dot(n, L) * 0.5 + 0.55, 0.0, 1.0);
-      float crater = hash13(floor(n * 9.0 + vColHint.x * 7.0));
-      float grain = hash13(n * 18.0 + vColHint.x);
-      vec3 rock = mix(vec3(0.055, 0.048, 0.042), vec3(0.16, 0.12, 0.09), crater);
-      rock = mix(rock, vec3(0.10, 0.09, 0.08), grain * 0.45);
-      vec3 light = vec3(1.0, 0.70, 0.34);
-      float id = vColHint.z;
-      if (id > 0.5 && id < 1.5) { rock = mix(rock, vec3(0.22, 0.08, 0.03), 0.55); light = vec3(1.15, 0.48, 0.12); }
-      else if (id > 1.5 && id < 2.5) { rock = mix(rock, vec3(0.22, 0.16, 0.11), 0.4); light = vec3(1.0, 0.82, 0.58); }
-      else if (id > 4.5) { rock = mix(rock, vec3(0.4, 0.5, 0.58), 0.5); light = vec3(0.55, 0.78, 1.0); }
-      else if (id > 3.5 && id < 4.5) { rock = mix(rock, vec3(0.08, 0.09, 0.12), 0.4); light = vec3(0.65, 0.72, 0.9); }
-      float illum = 1.6 / (length(vW) * 0.07 + 0.45);
-      vec3 gold = light * ndl * illum;
-      float fres = pow(1.0 - max(dot(n, v), 0.0), 3.4);
-      vec3 atmos = light * fres * ndl * 0.42;
-      vec3 col = rock * (0.16 + wrap * 0.62) + gold * rock * 3.2 + atmos;
-      col += uPulseAmp * gold * 0.12;
-      vec3 rd = normalize(vW - uCamPos);
-      float tca = dot(-uCamPos, rd);
-      float dist = length(vW - uCamPos);
-      if (tca > 0.0 && tca < dist){
-        float d2 = dot(uCamPos, uCamPos) - tca * tca;
-        if (d2 < 1.05) discard;
-      }
-      o = vec4(col, 1.0);
+      vec3 p = aPos;
+      vec3 v = aVel;
+      float e = 0.0025;
+      float f = fieldXY(p);
+      vec3 g = vec3(
+        (fieldXY(p + vec3(e,0,0)) - f) / e,
+        (fieldXY(p + vec3(0,e,0)) - f) / e,
+        (fieldZ(p + vec3(0,0,e)) - fieldZ(p)) / e
+      );
+      float fz = fieldZ(p);
+      v -= uAttract * f * vec3(g.x, g.y, 0.0);
+      v.z -= uZPull * fz * g.z;
+      v *= uDamp;
+      vec3 rnd = vec3(
+        hash(p + uTime),
+        hash(p.yzx + uTime * 1.7),
+        hash(p.zxy + uTime * 0.9)
+      ) - 0.5;
+      v += rnd * uJitter * (1.0 + uScatter * 10.0);
+      p += v * uDt;
+      float h = uBox * 0.5;
+      if (abs(p.x) > h) { p.x = clamp(p.x, -h, h); v.x *= -0.4; }
+      if (abs(p.y) > h) { p.y = clamp(p.y, -h, h); v.y *= -0.4; }
+      if (abs(p.z) > h) { p.z = clamp(p.z, -h, h); v.z *= -0.4; }
+      vPos = p;
+      vVel = v;
+      gl_Position = vec4(0.0);
     }`;
 
-    const VS_INFALL = `#version 300 es
+    const FS_DUMMY = `#version 300 es
+    precision mediump float;
+    out vec4 o;
+    void main(){ o = vec4(0.0); }`;
+
+    const VS_DRAW = `#version 300 es
     in vec3 aPos;
     uniform mat4 uMVP;
     uniform float uPoint;
-    out vec3 vCol;
     void main(){
       gl_Position = uMVP * vec4(aPos, 1.0);
-      gl_PointSize = 7.0 * uPoint / max(gl_Position.w, 0.35);
-      float r = length(aPos);
-      vCol = mix(vec3(1.2, 0.95, 0.7), vec3(1.4, 0.4, 0.1), smoothstep(6.0, 1.4, r));
+      gl_PointSize = uPoint / max(gl_Position.w, 0.35);
     }`;
 
-    let progBH, progBright, progBlur, progComp, progPt, progPrism, progInfall;
+    const FS_DRAW = `#version 300 es
+    precision mediump float;
+    out vec4 o;
+    void main(){
+      vec2 q = gl_PointCoord * 2.0 - 1.0;
+      float d = dot(q, q);
+      if (d > 1.0) discard;
+      float g = exp(-d * 3.6);
+      o = vec4(vec3(1.0, 0.82, 0.52) * g, 1.0);
+    }`;
+
+    let progUp, progDraw;
     try {
-      progBH = makeProgram(VS_QUAD, FS_BH, "BH");
-      progBright = makeProgram(VS_QUAD, FS_BRIGHT, "BRIGHT");
-      progBlur = makeProgram(VS_QUAD, FS_BLUR, "BLUR");
-      progComp = makeProgram(VS_QUAD, FS_COMP, "COMP");
-      progPt = makeProgram(VS_PT, FS_PT, "PT");
-      progPrism = makeProgram(VS_PRISM, FS_PRISM, "PRISM");
-      progInfall = makeProgram(VS_INFALL, FS_PT, "INFALL");
+      progUp = link(compile(gl.VERTEX_SHADER, VS_UPDATE, "UP"), compile(gl.FRAGMENT_SHADER, FS_DUMMY, "DUM"), ["vPos", "vVel"]);
+      progDraw = link(compile(gl.VERTEX_SHADER, VS_DRAW, "DRAW VS"), compile(gl.FRAGMENT_SHADER, FS_DRAW, "DRAW FS"));
     } catch (err) {
-      showFail(String(err.message || err));
+      fail(String(err.message || err));
       return;
     }
 
-    const quad = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    const posA = new Float32Array(N * 3);
+    const velA = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      posA[i * 3] = (Math.random() - 0.5) * L;
+      posA[i * 3 + 1] = (Math.random() - 0.5) * L;
+      posA[i * 3 + 2] = (Math.random() - 0.5) * L * 0.12;
+    }
+    function makeBuf(data) {
+      const b = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, b);
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_COPY);
+      return b;
+    }
+    const posBuf = [makeBuf(posA), makeBuf(posA)];
+    const velBuf = [makeBuf(velA), makeBuf(velA)];
 
-    function makeQuadVao(prog) {
+    function makeUpdateVao(i) {
       const vao = gl.createVertexArray();
       gl.bindVertexArray(vao);
-      gl.bindBuffer(gl.ARRAY_BUFFER, quad);
-      gl.enableVertexAttribArray(prog.a.aPos);
-      gl.vertexAttribPointer(prog.a.aPos, 2, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, posBuf[i]);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, velBuf[i]);
+      gl.enableVertexAttribArray(1);
+      gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
       gl.bindVertexArray(null);
       return vao;
     }
-    const vaoBH = makeQuadVao(progBH);
-    const vaoBright = makeQuadVao(progBright);
-    const vaoBlur = makeQuadVao(progBlur);
-    const vaoComp = makeQuadVao(progComp);
-
-    function bindQuad(prog) {
-      if (prog === progBH) gl.bindVertexArray(vaoBH);
-      else if (prog === progBright) gl.bindVertexArray(vaoBright);
-      else if (prog === progBlur) gl.bindVertexArray(vaoBlur);
-      else gl.bindVertexArray(vaoComp);
+    function makeDrawVao(i) {
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, posBuf[i]);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+      gl.bindVertexArray(null);
+      return vao;
     }
-
-    const nDisk = mobile ? 8000 : 20000;
-    const nGal  = mobile ? 4000 : 14000;
-    const nInner = mobile ? 1800 : 6000;
-    const nP = nDisk + nGal + nInner;
-    const pData = new Float32Array(nP * 4);
-    const pCol = new Float32Array(nP * 3);
-    let pi = 0;
-    function pushP(r, y, phase, kind, col) {
-      const i = pi++;
-      pData[i*4] = r; pData[i*4+1] = y; pData[i*4+2] = phase; pData[i*4+3] = kind;
-      pCol[i*3] = col[0]; pCol[i*3+1] = col[1]; pCol[i*3+2] = col[2];
-    }
-    for (let i = 0; i < nDisk; i++) {
-      const r = 3.15 + Math.pow(Math.random(), 0.55) * 12.2;
-      const y = (Math.random() - 0.5) * (0.04 + 0.14 / (r * 0.22));
-      const t = Math.max(0, 1 - (r - 3.15) / 12);
-      pushP(r, y, Math.random() * 6.283, 0, [
-        0.62 + 0.45 * t, 0.22 + 0.38 * t, 0.07 + 0.12 * t
-      ]);
-    }
-    for (let i = 0; i < nGal; i++) {
-      const arm = i % 3;
-      const r = 18 + Math.pow(Math.random(), 0.45) * 42;
-      const a = arm * 2.094 + r * 0.32 + (Math.random() - 0.5) * 0.55;
-      const y = (Math.random() - 0.5) * (0.7 + r * 0.035);
-      const t = Math.exp(-Math.abs(y) * 0.35);
-      pushP(r, y, a, 1, [0.55 * t, 0.32 * t, 0.16 * t]);
-    }
-    for (let i = 0; i < nInner; i++) {
-      const r = 1.55 + Math.pow(Math.random(), 0.7) * 2.4;
-      const y = (Math.random() - 0.5) * 0.08;
-      const t = Math.max(0, 1 - (r - 1.55) / 2.4);
-      pushP(r, y, Math.random() * 6.283, 2, [
-        0.85 + 0.4 * t, 0.38 + 0.28 * t, 0.12
-      ]);
-    }
-    const pBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, pData, gl.STATIC_DRAW);
-    const pColBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pColBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, pCol, gl.STATIC_DRAW);
-    const vaoPt = gl.createVertexArray();
-    gl.bindVertexArray(vaoPt);
-    gl.bindBuffer(gl.ARRAY_BUFFER, pBuf);
-    gl.enableVertexAttribArray(progPt.a.aData);
-    gl.vertexAttribPointer(progPt.a.aData, 4, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, pColBuf);
-    gl.enableVertexAttribArray(progPt.a.aCol);
-    gl.vertexAttribPointer(progPt.a.aCol, 3, gl.FLOAT, false, 0, 0);
-    gl.bindVertexArray(null);
-
-    function sphereMesh(lat, lon) {
-      const verts = [];
-      for (let y = 0; y <= lat; y++) {
-        const phi = y / lat * Math.PI;
-        for (let x = 0; x <= lon; x++) {
-          const th = x / lon * Math.PI * 2;
-          const px = Math.sin(phi) * Math.cos(th);
-          const py = Math.cos(phi);
-          const pz = Math.sin(phi) * Math.sin(th);
-          verts.push([px, py, pz]);
-        }
-      }
-      const pos = [], nrm = [];
-      const cols = lon + 1;
-      for (let y = 0; y < lat; y++) {
-        for (let x = 0; x < lon; x++) {
-          const a = verts[y * cols + x], b = verts[(y + 1) * cols + x];
-          const c = verts[y * cols + x + 1], d = verts[(y + 1) * cols + x + 1];
-          for (const P of [a, b, c, c, b, d]) {
-            pos.push(...P);
-            nrm.push(...P);
-          }
-        }
-      }
-      return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), count: pos.length / 3 };
-    }
-    const mesh = sphereMesh(mobile ? 10 : 14, mobile ? 16 : 22);
-    const worldR = mobile
-      ? [4.6, 6.4, 9.2, 13.5, 19, 28, 38, 52]
-      : [3.9, 5.2, 6.8, 9.1, 12.4, 16.8, 22.5, 29, 38, 48, 58, 8.3, 11.2, 18.6];
-    const nPrism = worldR.length;
-    const instA = new Float32Array(nPrism * 4);
-    const instB = new Float32Array(nPrism * 4);
-    for (let i = 0; i < nPrism; i++) {
-      const r = worldR[i];
-      const inner = r < 8;
-      instA[i*4] = r;
-      instA[i*4+1] = i * 1.7 + 0.4;
-      instA[i*4+2] = (i % 2 ? 0.18 : -0.14) * (inner ? 0.4 : 1);
-      instA[i*4+3] = inner ? (0.07 + (i % 3) * 0.025) : (0.13 + (i % 5) * 0.035);
-      instB[i*4] = 0.25 + (i % 7) * 0.11;
-      instB[i*4+1] = (i % 2 ? 0.22 : -0.18);
-      instB[i*4+2] = (i * 0.17) % 1;
-      instB[i*4+3] = i;
-    }
-    const prismPosBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, prismPosBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, mesh.pos, gl.STATIC_DRAW);
-    const prismNrmBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, prismNrmBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, mesh.nrm, gl.STATIC_DRAW);
-    const instABuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, instABuf);
-    gl.bufferData(gl.ARRAY_BUFFER, instA, gl.STATIC_DRAW);
-    const instBBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, instBBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, instB, gl.STATIC_DRAW);
-    const vaoPrism = gl.createVertexArray();
-    gl.bindVertexArray(vaoPrism);
-    gl.bindBuffer(gl.ARRAY_BUFFER, prismPosBuf);
-    gl.enableVertexAttribArray(progPrism.a.aPos);
-    gl.vertexAttribPointer(progPrism.a.aPos, 3, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, prismNrmBuf);
-    gl.enableVertexAttribArray(progPrism.a.aNrm);
-    gl.vertexAttribPointer(progPrism.a.aNrm, 3, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, instABuf);
-    gl.enableVertexAttribArray(progPrism.a.aInstA);
-    gl.vertexAttribPointer(progPrism.a.aInstA, 4, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(progPrism.a.aInstA, 1);
-    gl.bindBuffer(gl.ARRAY_BUFFER, instBBuf);
-    gl.enableVertexAttribArray(progPrism.a.aInstB);
-    gl.vertexAttribPointer(progPrism.a.aInstB, 4, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(progPrism.a.aInstB, 1);
-    gl.bindVertexArray(null);
-
-    const infalls = [];
-    const infallBuf = gl.createBuffer();
-    const vaoInfall = gl.createVertexArray();
-    gl.bindVertexArray(vaoInfall);
-    gl.bindBuffer(gl.ARRAY_BUFFER, infallBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(16 * 3), gl.DYNAMIC_DRAW);
-    gl.enableVertexAttribArray(progInfall.a.aPos);
-    gl.vertexAttribPointer(progInfall.a.aPos, 3, gl.FLOAT, false, 0, 0);
-    gl.bindVertexArray(null);
-
-    function makeTarget(w, h, hdr, depth) {
-      const tex = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-      const intern = hdr && canHDR ? gl.RGBA16F : gl.RGBA8;
-      const type = hdr && canHDR ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE;
-      gl.texImage2D(gl.TEXTURE_2D, 0, intern, w, h, 0, gl.RGBA, type, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      const fbo = gl.createFramebuffer();
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-      if (depth) {
-        const rb = gl.createRenderbuffer();
-        gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
-        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
-      }
-      const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      if (!ok) {
-        if (hdr) return makeTarget(w, h, false, depth);
-        throw new Error("FBO failed");
-      }
-      return { tex, fbo, w, h };
-    }
-
-    let scene, bright, blurA, blurB, streak, rtW = 0, rtH = 0, bloomW = 0, bloomH = 0;
-    let steps = mobile ? 42 : 72;
-    const stepsTarget = steps;
-    let renderScale = mobile ? 0.52 : Math.min(1, 1400 / Math.max(innerWidth, 1));
-
-    function resizeRT() {
-      const dpr = Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2);
-      canvas.width = Math.max(2, Math.floor(innerWidth * dpr));
-      canvas.height = Math.max(2, Math.floor(innerHeight * dpr));
-      const w = Math.max(2, Math.floor(canvas.width * renderScale));
-      const h = Math.max(2, Math.floor(canvas.height * renderScale));
-      if (w === rtW && h === rtH) return;
-      rtW = w; rtH = h;
-      bloomW = Math.max(2, w >> 1);
-      bloomH = Math.max(2, h >> 1);
-      scene = makeTarget(w, h, true, true);
-      bright = makeTarget(bloomW, bloomH, true);
-      blurA = makeTarget(bloomW, bloomH, true);
-      blurB = makeTarget(bloomW, bloomH, true);
-      streak = makeTarget(bloomW, Math.max(2, bloomH >> 1), true);
-    }
-    resizeRT();
-    addEventListener("resize", () => { renderScale = mobile ? 0.52 : Math.min(1, 1400 / Math.max(innerWidth, 1)); resizeRT(); }, { passive: true });
+    const vaoUp = [makeUpdateVao(0), makeUpdateVao(1)];
+    const vaoDraw = [makeDrawVao(0), makeDrawVao(1)];
+    const tf = gl.createTransformFeedback();
+    let cur = 0;
 
     function perspective(fov, aspect, near, far) {
       const f = 1 / Math.tan(fov / 2);
@@ -1367,85 +325,74 @@
     }
     function lookAt(ex, ey, ez) {
       let zx = ex, zy = ey, zz = ez;
-      let zl = 1 / Math.hypot(zx, zy, zz);
+      const zl = 1 / Math.hypot(zx, zy, zz);
       zx *= zl; zy *= zl; zz *= zl;
-      let xx = 0 * zz - 1 * zy, xy = 1 * zx - 0 * zz, xz = 0 * zy - 0 * zx;
-      if (Math.hypot(xx, xy, xz) < 1e-5) { xx = 1; xy = 0; xz = 0; }
-      let xl = 1 / Math.hypot(xx, xy, xz);
-      xx *= xl; xy *= xl; xz *= xl;
+      let xx = -zy, xy = zx, xz = 0;
+      let xl = Math.hypot(xx, xy, xz);
+      if (xl < 1e-6) { xx = 1; xy = 0; xz = 0; xl = 1; }
+      xx /= xl; xy /= xl; xz /= xl;
       const yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
       return new Float32Array([
         xx, yx, zx, 0,
         xy, yy, zy, 0,
         xz, yz, zz, 0,
-        -(xx*ex + xy*ey + xz*ez),
-        -(yx*ex + yy*ey + yz*ez),
-        -(zx*ex + zy*ey + zz*ez), 1
+        -(xx * ex + xy * ey + xz * ez),
+        -(yx * ex + yy * ey + yz * ez),
+        -(zx * ex + zy * ey + zz * ez), 1
       ]);
     }
     function mul4(a, b) {
       const o = new Float32Array(16);
       for (let c = 0; c < 4; c++) {
         for (let r = 0; r < 4; r++) {
-          o[c*4+r] = a[0*4+r]*b[c*4+0] + a[1*4+r]*b[c*4+1] + a[2*4+r]*b[c*4+2] + a[3*4+r]*b[c*4+3];
+          o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
         }
       }
       return o;
     }
-    function basis(yaw, pitch, dist) {
-      const cp = Math.cos(pitch), sp = Math.sin(pitch);
-      const cy = Math.cos(yaw), sy = Math.sin(yaw);
-      const x = dist * cy * cp, y = dist * sp, z = dist * sy * cp;
-      const pos = [x, y, z];
-      const fl = Math.hypot(x, y, z) || 1;
-      const fwd = [-x/fl, -y/fl, -z/fl];
-      let right = [fwd[1]*0 - fwd[2]*1, fwd[2]*0 - fwd[0]*0, fwd[0]*1 - fwd[1]*0];
-      let rl = Math.hypot(right[0], right[1], right[2]);
-      if (rl < 1e-5) right = [1, 0, 0];
-      else { right[0]/=rl; right[1]/=rl; right[2]/=rl; }
-      const up = [
-        right[1]*fwd[2] - right[2]*fwd[1],
-        right[2]*fwd[0] - right[0]*fwd[2],
-        right[0]*fwd[1] - right[1]*fwd[0]
-      ];
-      return { pos, fwd, right, up };
-    }
 
-    const qD = parseFloat(new URLSearchParams(location.search).get("d") || new URLSearchParams(location.search).get("descent") || "");
-    const cam = {
-      yaw: 0.55,
-      pitch: 0.38,
-      zoom: Number.isFinite(qD) ? qD : 1,
-      dist: 16.4,
-      vy: 0, vp: 0, vd: 0,
-      auto: true
-    };
-    cam.dist = PRISM.distForZoom(cam.zoom);
-    let down = false, lx = 0, ly = 0, pinch = 0;
-    let pulse = 8, pulseAmp = 0;
-    let mass = [8, 0, 0], massG = 0;
-    let pointer = { x: 0, y: 0 };
-    let exposure = reduced ? 1 : 0;
+    const params = new URLSearchParams(location.search);
+    const qHz = parseFloat(params.get("hz") || "");
+    let tFreq = Number.isFinite(qHz) ? PRISM.tFromHz(qHz) : PRISM.tFromHz(220);
+    let vFreq = 0;
+    let hz = PRISM.hzFromT(tFreq);
+    let modes = PRISM.modesFromHz(hz);
+    let scatter = 0;
+    let prevMN = modes.m + "," + modes.n + "," + modes.l;
+
+    const cam = { yaw: 0.62, pitch: 0.55, dist: 2.35, vy: 0, vp: 0 };
+    let down = false, lx = 0, ly = 0, moved = 0, pinch = 0;
+
+    function resize() {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = Math.max(2, Math.floor(innerWidth * dpr));
+      canvas.height = Math.max(2, Math.floor(innerHeight * dpr));
+    }
+    resize();
+    addEventListener("resize", resize, { passive: true });
 
     canvas.addEventListener("pointerdown", (e) => {
-      down = true;
-      cam.auto = false;
-      lx = e.clientX; ly = e.clientY;
+      down = true; moved = 0; lx = e.clientX; ly = e.clientY;
+      document.body.classList.add("drag");
       try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
     });
-    addEventListener("pointerup", () => { down = false; });
+    addEventListener("pointerup", (e) => {
+      document.body.classList.remove("drag");
+      if (down && moved < 6) toggleAudio();
+      down = false;
+    });
     addEventListener("pointermove", (e) => {
-      pointer.x = e.clientX; pointer.y = e.clientY;
       if (!down) return;
-      cam.vy += (e.clientX - lx) * 0.0022;
-      cam.vp += (e.clientY - ly) * 0.0018;
+      const dx = e.clientX - lx, dy = e.clientY - ly;
+      moved += Math.abs(dx) + Math.abs(dy);
+      cam.vy += dx * 0.005;
+      cam.vp += dy * 0.004;
       lx = e.clientX; ly = e.clientY;
     }, { passive: true });
     canvas.addEventListener("wheel", (e) => {
       e.preventDefault();
-      cam.auto = false;
-      const mag = Math.min(Math.abs(e.deltaY), 80);
-      cam.vd += Math.sign(e.deltaY) * mag * 0.0048;
+      const mag = Math.min(Math.abs(e.deltaY), 120);
+      vFreq += Math.sign(e.deltaY) * mag * 0.00022;
     }, { passive: false });
     canvas.addEventListener("touchstart", (e) => {
       if (e.touches.length === 2) {
@@ -1462,455 +409,128 @@
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
-        cam.vd -= (d - pinch) * 0.08;
+        cam.dist = Math.max(1.6, Math.min(8, cam.dist * Math.exp(-(d - pinch) * 0.01)));
         pinch = d;
       }
     }, { passive: false });
 
-    function spawnInfall(hit) {
-      infalls.push({
-        r: Math.max(4.2, Math.hypot(hit[0], hit[2])),
-        a: Math.atan2(hit[2], hit[0]),
-        y: hit[1] * 0.15,
-        t: 0
-      });
-      if (infalls.length > 14) infalls.shift();
-    }
-
-    canvas.addEventListener("click", (e) => {
-      pulse = 3.4;
-      pulseAmp = 1;
-      const b = basis(cam.yaw, cam.pitch, cam.dist);
-      const uvx = (e.clientX / innerWidth) * 2 - 1;
-      const uvy = 1 - (e.clientY / innerHeight) * 2;
-      const aspect = innerWidth / innerHeight;
-      const fov = 0.52;
-      const rd = [
-        b.fwd[0] + b.right[0] * uvx * aspect * fov + b.up[0] * uvy * fov,
-        b.fwd[1] + b.right[1] * uvx * aspect * fov + b.up[1] * uvy * fov,
-        b.fwd[2] + b.right[2] * uvx * aspect * fov + b.up[2] * uvy * fov
+    let ac, master, oscs = [];
+    let audioOn = false;
+    function buildAudio() {
+      if (ac) return;
+      ac = new AudioContext();
+      master = ac.createGain();
+      master.gain.value = 0;
+      master.connect(ac.destination);
+      const specs = [
+        { type: "sine", mult: 1, g: 0.11 },
+        { type: "sine", mult: 2, g: 0.028 },
+        { type: "sine", mult: 3, g: 0.012 },
+        { type: "triangle", mult: 1, g: 0.018 }
       ];
-      const rl = Math.hypot(rd[0], rd[1], rd[2]) || 1;
-      rd[0]/=rl; rd[1]/=rl; rd[2]/=rl;
-      let hit = [8, 0, 0];
-      if (Math.abs(rd[1]) > 1e-4) {
-        const t = -b.pos[1] / rd[1];
-        if (t > 0) hit = [b.pos[0] + rd[0]*t, 0, b.pos[2] + rd[2]*t];
-      }
-      mass = hit;
-      massG = 1.8;
-      spawnInfall(hit);
-      spawnInfall([hit[0]*0.92, 0, hit[2]*1.08]);
-      pingAudio();
-    });
-
-    let ac, analyser, masterGain, filterNode, waveData;
-    let noiseGainNode, fmGainNode, droneGainNode, subOsc, fmOsc, beatOsc;
-    let freqBuf, timeBuf, prevSpec;
-    let audioBands = { SubBass:0, Bass:0, LowMid:0, Mid:0, HighMid:0, Air:0, rms:0, transient:0, flux:0, pascals:0 };
-    const auBtn = document.getElementById("au");
-    const waveEl = document.getElementById("wave");
-    waveEl.innerHTML = Array.from({ length: 22 }, () => "<i></i>").join("");
-    const waveBars = [...waveEl.querySelectorAll("i")];
-
-    function pingAudio() {
-      if (!ac) return;
+      specs.forEach((s) => {
+        const o = ac.createOscillator();
+        o.type = s.type;
+        o.frequency.value = hz * s.mult;
+        const g = ac.createGain();
+        g.gain.value = s.g;
+        o.connect(g).connect(master);
+        o.start();
+        oscs.push({ o, g, mult: s.mult });
+      });
+    }
+    function toggleAudio() {
+      buildAudio();
+      if (ac.state === "suspended") ac.resume();
+      audioOn = !audioOn;
       const t = ac.currentTime;
-      const o = ac.createOscillator();
-      const g = ac.createGain();
-      o.type = "sine";
-      o.frequency.setValueAtTime(220, t);
-      o.frequency.exponentialRampToValueAtTime(48, t + 0.7);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.12, t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
-      o.connect(g).connect(masterGain);
-      o.start(t); o.stop(t + 0.85);
-      const nlen = ac.sampleRate * 0.2;
-      const buf = ac.createBuffer(1, nlen, ac.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < nlen; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / nlen);
-      const src = ac.createBufferSource();
-      src.buffer = buf;
-      const bp = ac.createBiquadFilter();
-      bp.type = "bandpass"; bp.frequency.value = 900; bp.Q.value = 1.2;
-      const ng = ac.createGain(); ng.gain.value = 0.08;
-      src.connect(bp).connect(ng).connect(masterGain);
-      src.start();
+      master.gain.cancelScheduledValues(t);
+      master.gain.setValueAtTime(master.gain.value, t);
+      master.gain.linearRampToValueAtTime(audioOn ? 0.9 : 0.0001, t + 0.12);
+    }
+    function syncAudio() {
+      if (!ac) return;
+      oscs.forEach((s) => {
+        s.o.frequency.setTargetAtTime(Math.max(20, hz * s.mult), ac.currentTime, 0.04);
+      });
     }
 
-    auBtn.addEventListener("click", async () => {
-      if (!ac) {
-        ac = new AudioContext();
-        masterGain = ac.createGain();
-        masterGain.gain.value = 0;
-        analyser = ac.createAnalyser();
-        analyser.fftSize = 4096;
-        analyser.smoothingTimeConstant = 0.7;
-        masterGain.connect(analyser);
-        analyser.connect(ac.destination);
-        waveData = new Uint8Array(64);
-        freqBuf = new Uint8Array(analyser.frequencyBinCount);
-        timeBuf = new Uint8Array(analyser.fftSize);
-        prevSpec = new Float32Array(analyser.frequencyBinCount);
+    document.getElementById("count").textContent = String(N);
 
-        const boot = PRISM.droneForDomain(cam.zoom);
-        subOsc = ac.createOscillator();
-        subOsc.type = "sine";
-        subOsc.frequency.value = boot.subHz;
-        droneGainNode = ac.createGain();
-        droneGainNode.gain.value = boot.droneGain;
-        subOsc.connect(droneGainNode).connect(masterGain);
-        beatOsc = ac.createOscillator();
-        beatOsc.type = "sine";
-        beatOsc.frequency.value = boot.droneHz + boot.beatHz;
-        const beatG = ac.createGain();
-        beatG.gain.value = boot.droneGain * 0.35;
-        beatOsc.connect(beatG).connect(masterGain);
-        fmOsc = ac.createOscillator();
-        fmOsc.type = "sine";
-        fmOsc.frequency.value = boot.fmHz;
-        fmGainNode = ac.createGain();
-        fmGainNode.gain.value = boot.fmGain;
-        fmOsc.connect(fmGainNode).connect(masterGain);
-        const nlen = ac.sampleRate * 2;
-        const buf = ac.createBuffer(1, nlen, ac.sampleRate);
-        const d = buf.getChannelData(0);
-        for (let i = 0; i < nlen; i++) d[i] = Math.random() * 2 - 1;
-        const noise = ac.createBufferSource();
-        noise.buffer = buf; noise.loop = true;
-        filterNode = ac.createBiquadFilter();
-        filterNode.type = "bandpass";
-        filterNode.frequency.value = boot.filterHz;
-        filterNode.Q.value = 4;
-        noiseGainNode = ac.createGain();
-        noiseGainNode.gain.value = boot.noiseGain;
-        noise.connect(filterNode).connect(noiseGainNode).connect(masterGain);
-        subOsc.start(); beatOsc.start(); fmOsc.start(); noise.start();
-        masterGain.gain.linearRampToValueAtTime(0.85, ac.currentTime + 2.4);
-      }
-      if (ac.state === "suspended") await ac.resume();
-      auBtn.textContent = "[ Audio // Online ]";
-    });
-    const micBtn = document.getElementById("mic");
-    let micOn = false, micSrc = null;
-    micBtn.addEventListener("click", async () => {
-      if (!ac) auBtn.click();
-      if (ac.state === "suspended") await ac.resume();
-      if (!micOn) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          micSrc = ac.createMediaStreamSource(stream);
-          micSrc.connect(analyser);
-          micOn = true;
-          micBtn.textContent = "[ Mic // Live ]";
-        } catch (err) {
-          micBtn.textContent = "[ Mic // Denied ]";
-        }
-      } else {
-        if (micSrc) try { micSrc.disconnect(); } catch (_) {}
-        micOn = false;
-        micBtn.textContent = "[ Mic // Off ]";
-      }
-    });
-
-    document.getElementById("pc").textContent = nP.toLocaleString();
-    document.getElementById("pr").textContent = String(nPrism);
-    if (mobile) {
-      document.getElementById("hint").textContent = "Drag to orbit · pinch to descend · tap to drop mass";
-    }
-    function syncHud() {
-      const hudMap = PRISM.mapDescent(cam.zoom);
-      document.getElementById("rad").textContent = cam.dist.toFixed(2) + " Rs";
-      const zed = 1 / Math.sqrt(Math.max(0.05, 1 - 1 / Math.max(cam.dist, 1.05))) - 1;
-      document.getElementById("zed").textContent = zed.toFixed(3);
-      document.getElementById("layer").textContent = hudMap.name;
-      document.getElementById("modes").textContent =
-        hudMap.m.toFixed(0) + " · " + hudMap.n.toFixed(0) + " · " + hudMap.l.toFixed(0);
-      document.getElementById("pascals").textContent = (audioBands.pascals || 0).toFixed(2) + " Pa";
-      const rmsEl = document.getElementById("rms");
-      if (rmsEl) rmsEl.textContent = (audioBands.rms || 0).toFixed(2);
-      const fluxEl = document.getElementById("flux");
-      if (fluxEl) fluxEl.textContent = (audioBands.flux || 0).toFixed(3);
-      const aud = PRISM.droneForDomain(cam.zoom);
-      if (filterNode && ac) {
-        filterNode.frequency.value = aud.filterHz + pulseAmp * 80;
-        if (noiseGainNode) noiseGainNode.gain.value = aud.noiseGain;
-        if (fmGainNode) fmGainNode.gain.value = aud.fmGain;
-        if (droneGainNode) droneGainNode.gain.value = aud.droneGain;
-        if (subOsc) subOsc.frequency.value = aud.subHz;
-        if (fmOsc) fmOsc.frequency.value = aud.fmHz;
-        if (beatOsc) beatOsc.frequency.value = aud.droneHz + aud.beatHz;
-      }
-    }
-    syncHud();
-
-    const t0 = performance.now();
-    let last = t0, frames = 0, fpsT = t0, fps = 60;
-    let proper = 0;
-
-    let glChecked = false;
-    function drawPass(prog, fbo, w, h, tex, unit) {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-      gl.viewport(0, 0, w, h);
-      gl.useProgram(prog.p);
-      bindQuad(prog);
-      if (tex) {
-        gl.activeTexture(gl.TEXTURE0 + (unit || 0));
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.uniform1i(prog.u.uTex, unit || 0);
-      }
-    }
-
+    let last = performance.now();
     function loop(now) {
       requestAnimationFrame(loop);
-      const dt = Math.min(0.05, (now - last) / 1000);
+      const dt = Math.min(0.033, (now - last) / 1000);
       last = now;
-      const t = (now - t0) / 1000;
 
-      if (!reduced) {
-        const k = Math.min(t / 3.8, 1);
-        const e = 1 - Math.pow(1 - k, 3);
-        if (t < 4.2 && !Number.isFinite(qD)) {
-          cam.zoom += (1 - cam.zoom) * (0.55 * dt + 0.012);
-        }
-        exposure = Math.min(1, Math.max(0, (t - 0.35) / 2.4));
-        if (t > 2.4) document.getElementById("hud").classList.add("on");
-        if (t > 2.6) document.body.classList.add("live");
-      } else {
-        exposure = 1;
-        document.getElementById("hud").classList.add("on");
-        document.body.classList.add("live");
-      }
+      vFreq *= 0.9;
+      tFreq = Math.max(0, Math.min(1, tFreq + vFreq * dt * 18));
+      hz = PRISM.hzFromT(tFreq);
+      modes = PRISM.modesFromHz(hz);
+      const mn = modes.m + "," + modes.n + "," + modes.l;
+      if (mn !== prevMN) { scatter = 1; prevMN = mn; }
+      scatter *= Math.pow(0.15, dt);
 
-      if (cam.auto && t > 3) cam.vy += 0.018 * dt;
-      cam.vy *= 0.9; cam.vp *= 0.9; cam.vd *= 0.92;
+      cam.vy *= 0.9; cam.vp *= 0.9;
       cam.yaw += cam.vy;
-      cam.pitch = Math.max(-1.15, Math.min(1.22, cam.pitch + cam.vp));
-      cam.zoom -= cam.vd * dt * 0.42;
-      const mapped = PRISM.mapDescent(cam.zoom);
-      cam.dist = PRISM.distForZoom(cam.zoom);
-      const uDes = mapped.unit;
-
-      pulse += dt * 2.15;
-      pulseAmp *= Math.pow(0.22, dt);
-      if (pulse > 16) pulse = 3.2;
-      massG *= Math.pow(0.15, dt);
-
-      const b = basis(cam.yaw, cam.pitch, cam.dist);
-      const aspect = rtW / rtH;
-      const fov = 0.55 - 0.12 * Math.max(0, Math.min(1, (12 - cam.dist) / 9));
-      const P = perspective(2 * Math.atan(fov), aspect, 0.08, 220);
-      const V = lookAt(b.pos[0], b.pos[1], b.pos[2]);
+      cam.pitch = Math.max(-1.15, Math.min(1.2, cam.pitch + cam.vp));
+      const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+      const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+      const ex = cam.dist * cy * cp, ey = cam.dist * sp, ez = cam.dist * sy * cp;
+      const P = perspective(0.85, canvas.width / canvas.height, 0.12, 40);
+      const V = lookAt(ex, ey, ez);
       const MVP = mul4(P, V);
 
-      const uvx = (pointer.x / innerWidth) * 2 - 1;
-      const uvy = 1 - (pointer.y / innerHeight) * 2;
-      const rd = [
-        b.fwd[0] + b.right[0] * uvx * aspect * fov + b.up[0] * uvy * fov,
-        b.fwd[1] + b.right[1] * uvx * aspect * fov + b.up[1] * uvy * fov,
-        b.fwd[2] + b.right[2] * uvx * aspect * fov + b.up[2] * uvy * fov
-      ];
-      const rdl = Math.hypot(rd[0], rd[1], rd[2]) || 1;
-      if (Math.abs(rd[1] / rdl) > 1e-4) {
-        const tt = -b.pos[1] / (rd[1] / rdl);
-        if (tt > 0 && massG < 0.05) {
-          mass = [b.pos[0] + (rd[0]/rdl)*tt, 0, b.pos[2] + (rd[2]/rdl)*tt];
-        }
+      gl.useProgram(progUp.p);
+      gl.uniform1f(progUp.u.uM, modes.m);
+      gl.uniform1f(progUp.u.uN, modes.n);
+      gl.uniform1f(progUp.u.uL, modes.l);
+      gl.uniform1f(progUp.u.uBox, L);
+      gl.uniform1f(progUp.u.uDt, Math.min(dt, 0.02));
+      gl.uniform1f(progUp.u.uAttract, 6.5);
+      gl.uniform1f(progUp.u.uDamp, 0.93);
+      gl.uniform1f(progUp.u.uJitter, 0.0025);
+      gl.uniform1f(progUp.u.uScatter, scatter);
+      gl.uniform1f(progUp.u.uZPull, 2.2);
+      gl.uniform1f(progUp.u.uTime, now * 0.001);
+      const sub = 4;
+      for (let s = 0; s < sub; s++) {
+        const nxt = 1 - cur;
+        gl.bindVertexArray(vaoUp[cur]);
+        gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, tf);
+        gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, posBuf[nxt]);
+        gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 1, velBuf[nxt]);
+        gl.enable(gl.RASTERIZER_DISCARD);
+        gl.beginTransformFeedback(gl.POINTS);
+        gl.drawArrays(gl.POINTS, 0, N);
+        gl.endTransformFeedback();
+        gl.disable(gl.RASTERIZER_DISCARD);
+        gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
+        gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 1, null);
+        gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null);
+        cur = nxt;
       }
 
-      for (let i = infalls.length - 1; i >= 0; i--) {
-        const s = infalls[i];
-        s.t += dt;
-        s.a += dt * (1.8 / (s.r + 0.3));
-        s.r -= dt * (0.85 + 2.2 / (s.r + 0.2));
-        s.y *= 0.99;
-        if (s.r < 1.15) {
-          pulse = 1.4; pulseAmp = Math.max(pulseAmp, 1.2);
-          infalls.splice(i, 1);
-          pingAudio();
-        }
-      }
-
-      const gtt = Math.sqrt(Math.max(0.02, 1 - 1 / cam.dist));
-      proper += dt * gtt;
-
-      gl.disable(gl.DEPTH_TEST);
-      gl.disable(gl.BLEND);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, scene.fbo);
-      gl.viewport(0, 0, scene.w, scene.h);
-      gl.clearColor(0, 0, 0, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      gl.useProgram(progBH.p);
-      bindQuad(progBH);
-      gl.uniform2f(progBH.u.uRes, scene.w, scene.h);
-      gl.uniform3f(progBH.u.uCamPos, b.pos[0], b.pos[1], b.pos[2]);
-      gl.uniform3f(progBH.u.uCamFwd, b.fwd[0], b.fwd[1], b.fwd[2]);
-      gl.uniform3f(progBH.u.uCamRight, b.right[0], b.right[1], b.right[2]);
-      gl.uniform3f(progBH.u.uCamUp, b.up[0], b.up[1], b.up[2]);
-      gl.uniform1f(progBH.u.uTime, t);
-      gl.uniform1f(progBH.u.uFov, fov);
-      gl.uniform1f(progBH.u.uExposure, exposure);
-      gl.uniform1f(progBH.u.uPulse, pulse);
-      gl.uniform1f(progBH.u.uPulseAmp, pulseAmp);
-      gl.uniform1f(progBH.u.uSteps, steps);
-      if (analyser && freqBuf && timeBuf) {
-        analyser.getByteFrequencyData(freqBuf);
-        analyser.getByteTimeDomainData(timeBuf);
-        audioBands = PRISM.analyzeAudio(freqBuf, timeBuf, {
-          sampleRate: ac.sampleRate,
-          fftSize: analyser.fftSize,
-          prevSpectrum: prevSpec
-        });
-        for (let i = 0; i < freqBuf.length; i++) prevSpec[i] = freqBuf[i];
-        if (audioBands.bands64) {
-          waveBars.forEach((bar, i) => {
-            const v = audioBands.bands64[i % audioBands.bands64.length];
-            bar.style.height = (3 + v * 19) + "px";
-          });
-        }
-        const bandEls = document.querySelectorAll("#bands i");
-        const keys = ["SubBass", "Bass", "LowMid", "Mid", "HighMid", "Air"];
-        bandEls.forEach((el, i) => {
-          el.style.height = (2 + (audioBands[keys[i]] || 0) * 16) + "px";
-        });
-      }
-
-      gl.uniform1f(progBH.u.uCamDist, cam.dist);
-      gl.uniform1f(progBH.u.uFall, uDes);
-      gl.uniform1f(progBH.u.uSubBass, audioBands.SubBass || 0);
-      gl.uniform1f(progBH.u.uBass, audioBands.Bass || 0);
-      gl.uniform1f(progBH.u.uLowMid, audioBands.LowMid || 0);
-      gl.uniform1f(progBH.u.uMid, audioBands.Mid || 0);
-      gl.uniform1f(progBH.u.uHighMid, audioBands.HighMid || 0);
-      gl.uniform1f(progBH.u.uAir, audioBands.Air || 0);
-      gl.uniform1f(progBH.u.uRMS, audioBands.rms || 0);
-      gl.uniform1f(progBH.u.uTransient, audioBands.transient || 0);
-      gl.uniform1f(progBH.u.uFlux, audioBands.flux || 0);
-      gl.uniform3f(progBH.u.uModes, mapped.m, mapped.n, mapped.l);
-      gl.uniform1f(progBH.u.uDescent, uDes);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-      gl.enable(gl.DEPTH_TEST);
-      gl.depthFunc(gl.LESS);
-      gl.depthMask(true);
-      gl.disable(gl.BLEND);
-      gl.useProgram(progPrism.p);
-      gl.bindVertexArray(vaoPrism);
-      gl.uniformMatrix4fv(progPrism.u.uMVP, false, MVP);
-      gl.uniform1f(progPrism.u.uTime, t);
-      gl.uniform3f(progPrism.u.uCamPos, b.pos[0], b.pos[1], b.pos[2]);
-      gl.uniform3f(progPrism.u.uCamFwd, b.fwd[0], b.fwd[1], b.fwd[2]);
-      gl.uniform3f(progPrism.u.uCamRight, b.right[0], b.right[1], b.right[2]);
-      gl.uniform3f(progPrism.u.uCamUp, b.up[0], b.up[1], b.up[2]);
-      gl.uniform1f(progPrism.u.uPulseAmp, pulseAmp);
-      gl.uniform1f(progPrism.u.uFall, uDes);
-      gl.drawArraysInstanced(gl.TRIANGLES, 0, mesh.count, nPrism);
-
-      gl.depthMask(false);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0.0196, 0.0196, 0.0196, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE);
-      gl.useProgram(progPt.p);
-      gl.bindVertexArray(vaoPt);
-      gl.uniformMatrix4fv(progPt.u.uMVP, false, MVP);
-      gl.uniform1f(progPt.u.uTime, t);
-      gl.uniform1f(progPt.u.uPulse, pulse);
-      gl.uniform1f(progPt.u.uPulseAmp, pulseAmp);
-      gl.uniform3f(progPt.u.uMass, mass[0], mass[1], mass[2]);
-      gl.uniform1f(progPt.u.uMassG, massG);
-      gl.uniform1f(progPt.u.uPoint, Math.max(canvas.height / 900, 0.7));
-      gl.uniform1f(progPt.u.uCamDist, cam.dist);
-      gl.uniform1f(progPt.u.uFall, uDes);
-      gl.drawArrays(gl.POINTS, 0, nP);
-
-      if (infalls.length) {
-        const arr = new Float32Array(infalls.length * 3);
-        infalls.forEach((s, i) => {
-          arr[i*3] = Math.cos(s.a) * s.r;
-          arr[i*3+1] = s.y;
-          arr[i*3+2] = Math.sin(s.a) * s.r;
-        });
-        gl.useProgram(progInfall.p);
-        gl.bindVertexArray(vaoInfall);
-        gl.bindBuffer(gl.ARRAY_BUFFER, infallBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
-        gl.uniformMatrix4fv(progInfall.u.uMVP, false, MVP);
-        gl.uniform1f(progInfall.u.uPoint, Math.max(canvas.height / 800, 0.8));
-        gl.drawArrays(gl.POINTS, 0, infalls.length);
-      }
-      gl.depthMask(true);
-      gl.disable(gl.DEPTH_TEST);
+      gl.useProgram(progDraw.p);
+      gl.bindVertexArray(vaoDraw[cur]);
+      gl.uniformMatrix4fv(progDraw.u.uMVP, false, MVP);
+      gl.uniform1f(progDraw.u.uPoint, Math.max(canvas.height / 380, 1.8));
+      gl.drawArrays(gl.POINTS, 0, N);
       gl.disable(gl.BLEND);
-
-      drawPass(progBright, bright.fbo, bright.w, bright.h, scene.tex, 0);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-      drawPass(progBlur, blurA.fbo, blurA.w, blurA.h, bright.tex, 0);
-      gl.uniform2f(progBlur.u.uDir, 1.2 / blurA.w, 0);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      drawPass(progBlur, blurB.fbo, blurB.w, blurB.h, blurA.tex, 0);
-      gl.uniform2f(progBlur.u.uDir, 0, 1.2 / blurB.h);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      drawPass(progBlur, blurA.fbo, blurA.w, blurA.h, blurB.tex, 0);
-      gl.uniform2f(progBlur.u.uDir, 2.4 / blurA.w, 0);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      drawPass(progBlur, blurB.fbo, blurB.w, blurB.h, blurA.tex, 0);
-      gl.uniform2f(progBlur.u.uDir, 0, 2.4 / blurB.h);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-      drawPass(progBlur, streak.fbo, streak.w, streak.h, bright.tex, 0);
-      gl.uniform2f(progBlur.u.uDir, 5.5 / streak.w, 0);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.useProgram(progComp.p);
-      bindQuad(progComp);
-      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, scene.tex);
-      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, blurB.tex);
-      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, streak.tex);
-      gl.uniform1i(progComp.u.uScene, 0);
-      gl.uniform1i(progComp.u.uBloom, 1);
-      gl.uniform1i(progComp.u.uStreak, 2);
-      gl.uniform2f(progComp.u.uRes, canvas.width, canvas.height);
-      gl.uniform1f(progComp.u.uTime, t);
-      gl.uniform1f(progComp.u.uCA, 0.18 + pulseAmp * 0.35);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.bindVertexArray(null);
 
-      if (!glChecked) {
-        glChecked = true;
-        const err = gl.getError();
-        if (err) showFail("WebGL error " + err);
-      }
-
-      frames++;
-      if (now - fpsT > 650) {
-        fps = Math.round(frames * 1000 / (now - fpsT));
-        frames = 0; fpsT = now;
-        document.getElementById("fps").textContent = String(fps);
-        document.getElementById("st").textContent = String(steps);
-        document.getElementById("pu").textContent = pulseAmp.toFixed(2);
-        const mm = Math.floor(proper / 60);
-        const ss = Math.floor(proper % 60);
-        const cc = Math.floor((proper % 1) * 100);
-        document.getElementById("tau").innerHTML =
-          String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0") + ".<span>" + String(cc).padStart(2, "0") + "</span>";
-        syncHud();
-        if (fps < 36 && steps > 28) { steps -= 4; if (!mobile && renderScale > 0.45) { renderScale *= 0.92; resizeRT(); } }
-        else if (fps > 56 && steps < stepsTarget) steps += 2;
-      }
-      if (analyser && waveData) {
-        analyser.getByteFrequencyData(waveData);
-        waveBars.forEach((bar, i) => {
-          const v = waveData[i % waveData.length] / 255;
-          bar.style.height = (3 + v * 19) + "px";
-        });
-      } else {
-        waveBars.forEach((bar, i) => {
-          bar.style.height = (3 + (Math.sin(t * 2.2 + i * 0.45) * 0.5 + 0.5) * 10) + "px";
-        });
-      }
+      document.getElementById("hz").textContent = hz.toFixed(1);
+      document.getElementById("mode").textContent = modes.m + ", " + modes.n;
+      document.title = hz.toFixed(1) + "|" + modes.m + "," + modes.n + "|" + N;
+      document.documentElement.setAttribute("data-hz", hz.toFixed(1));
+      document.documentElement.setAttribute("data-mode", modes.m + "," + modes.n);
+      document.documentElement.setAttribute("data-count", String(N));
+      syncAudio();
     }
     requestAnimationFrame(loop);
   })();
