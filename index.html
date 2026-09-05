@@ -392,27 +392,94 @@
       }
       return col;
     }
-    vec3 innerCosmos(vec3 dir, float fall){
-      float oct = floor(fall);
+    vec3 hitPlanet(vec3 dir, vec3 c, float rad, vec3 albedo, vec3 L, vec3 Lc){
+      vec3 oc = -c;
+      float b = dot(oc, dir);
+      float h = b * b - dot(oc, oc) + rad * rad;
+      if (h < 0.0) return vec3(-1.0);
+      float t = -b - sqrt(h);
+      if (t < 0.0) return vec3(-1.0);
+      vec3 n = normalize(dir * t - c);
+      float ndl = max(0.0, dot(n, L));
+      float fres = pow(1.0 - max(dot(n, -dir), 0.0), 3.1);
+      float crater = hash13(floor(n * 9.0 + c * 4.0));
+      vec3 rock = mix(albedo * 0.4, albedo, crater);
+      return rock * (0.06 + ndl * 0.95) * Lc * 1.5 + Lc * fres * 0.38;
+    }
+    vec3 realmSky(vec3 dir, float fall){
+      float oct = floor(max(fall, 0.0));
       float f = fract(max(fall, 0.0));
+      float id = mod(oct, 6.0);
       float a = oct * 1.173 + 0.37;
-      float c = cos(a), s = sin(a);
-      vec3 d = vec3(c * dir.x + s * dir.z, dir.y, -s * dir.x + c * dir.z);
-      d = normalize(vec3(d.z, -d.x, d.y));
-      float zoom = exp(f * 3.05);
+      float ca = cos(a), sa = sin(a);
+      vec3 d = vec3(ca * dir.x + sa * dir.z, dir.y, -sa * dir.x + ca * dir.z);
+      float zoom = exp(f * 2.15);
       vec3 z = normalize(vec3(d.x / zoom, d.y / zoom, d.z));
-      vec3 col = starfield(z) * 1.55;
-      col += galaxyBand(z, oct * 0.91 + 2.4) * 3.2;
-      col += galaxyBand(z.zxy, oct * 1.3 + 5.1) * 1.4;
-      col += distantGalaxies(z.zxy) * 1.1;
-      float rho = length(z.xy);
-      float ring = exp(-abs(rho - 0.17) * 24.0);
-      col += vec3(1.15, 0.74, 0.38) * ring * 1.45;
-      float well = smoothstep(0.10, 0.016, rho);
-      vec3 next = starfield(z.yzx) * 1.3 + galaxyBand(z.yzx, oct + 4.2) * 2.4;
-      next += vec3(1.2, 0.78, 0.4) * exp(-abs(length(z.yz) - 0.2) * 22.0) * 0.8;
-      col = mix(col * (1.0 - well * 0.92) + vec3(1.15, 0.76, 0.4) * well * 0.1, next, well * smoothstep(0.45, 1.0, f));
+      vec3 L = normalize(vec3(0.25, 0.55, 0.7));
+      vec3 gold = vec3(1.0, 0.72, 0.36);
+      vec3 col = vec3(0.0);
+      vec3 p;
+      if (id < 0.5){
+        col = starfield(z) * 1.5 + galaxyBand(z, oct) * 3.0 + distantGalaxies(z) * 1.0;
+        col += gold * exp(-abs(length(z.xy) - 0.17) * 24.0) * 1.15;
+        p = hitPlanet(z, vec3(0.42, 0.08, 0.95), 0.13, vec3(0.16, 0.12, 0.09), L, gold);
+        if (p.x > -0.5) col = p;
+        p = hitPlanet(z, vec3(-0.55, -0.18, 1.05), 0.07, vec3(0.12, 0.1, 0.1), L, gold);
+        if (p.x > -0.5) col = p;
+      } else if (id < 1.5){
+        col = vec3(0.05, 0.018, 0.008) + galaxyBand(z, oct + 3.1) * 5.2;
+        col += vec3(1.05, 0.42, 0.1) * pow(max(z.y * 0.35 + 0.25, 0.0), 2.4) * 0.35;
+        for (int i = 0; i < 8; i++){
+          float fi = float(i);
+          vec3 c = vec3(hash13(vec3(fi, oct, 1.2)) - 0.5, hash13(vec3(fi, oct, 2.8)) - 0.5, 0.55 + hash13(vec3(fi, oct, 4.1)) * 0.6);
+          c = normalize(c) * (0.75 + hash13(vec3(fi, oct, 6.0)) * 0.5);
+          p = hitPlanet(z, c, 0.028 + hash13(vec3(fi, oct, 9.0)) * 0.05, vec3(0.2, 0.09, 0.04), L, vec3(1.15, 0.52, 0.18));
+          if (p.x > -0.5) col = p;
+        }
+      } else if (id < 2.5){
+        col = starfield(z) * 0.4 + vec3(0.018, 0.022, 0.035);
+        vec3 host = vec3(0.04, -0.14, 0.82);
+        p = hitPlanet(z, host, 0.46, vec3(0.24, 0.17, 0.12), L, gold * 1.15);
+        if (p.x > -0.5) col = p;
+        float ang = 1.0 - clamp(dot(normalize(host), z), -1.0, 1.0);
+        col += gold * exp(-ang * 28.0) * 0.18;
+        col += vec3(1.0, 0.8, 0.55) * exp(-ang * 8.0) * 0.05;
+        float ring = abs(dot(z, vec3(0.0, 1.0, 0.0)));
+        float rr = length(z.xz);
+        col += gold * exp(-abs(rr - 0.72) * 40.0) * smoothstep(0.12, 0.02, ring) * 0.45;
+      } else if (id < 3.5){
+        col = starfield(z) * 0.7 + vec3(0.01, 0.01, 0.02);
+        vec3 w1 = normalize(vec3(0.34, 0.06, 1.0));
+        vec3 w2 = normalize(vec3(-0.38, -0.1, 1.0));
+        float a1 = 1.0 - clamp(dot(z, w1), -1.0, 1.0);
+        float a2 = 1.0 - clamp(dot(z, w2), -1.0, 1.0);
+        col *= 1.0 - exp(-a1 * 90.0) * 0.92 - exp(-a2 * 90.0) * 0.92;
+        col += gold * exp(-abs(a1 - 0.018) * 110.0) * 1.5;
+        col += gold * exp(-abs(a2 - 0.018) * 110.0) * 1.5;
+        p = hitPlanet(z, vec3(0.0, 0.42, 1.1), 0.08, vec3(0.14, 0.11, 0.1), L, gold);
+        if (p.x > -0.5) col = p;
+      } else if (id < 4.5){
+        col = starfield(z) * 0.22 + vec3(0.004, 0.005, 0.01);
+        col += distantGalaxies(z) * 0.28;
+        p = hitPlanet(z, vec3(0.48, 0.12, 1.55), 0.055, vec3(0.2, 0.18, 0.16), L, vec3(0.7, 0.78, 0.95));
+        if (p.x > -0.5) col = p;
+      } else {
+        vec3 ice = vec3(0.5, 0.76, 1.0);
+        col = starfield(z) * 1.15 + ice * exp(-z.y * z.y * 4.0) * 0.07;
+        col += vec3(0.15, 0.28, 0.42) * galaxyBand(z, oct + 8.0) * 0.9;
+        for (int i = 0; i < 5; i++){
+          float fi = float(i);
+          vec3 c = normalize(vec3(hash13(vec3(fi, oct, 4.4)) - 0.5, hash13(vec3(fi, oct, 7.1)) - 0.5, 0.65));
+          p = hitPlanet(z, c * 1.15, 0.07 + hash13(vec3(fi, oct, 1.0)) * 0.06, vec3(0.5, 0.6, 0.7), L, ice);
+          if (p.x > -0.5) col = p;
+        }
+      }
       return col;
+    }
+    vec3 innerCosmos(vec3 dir, float fall){
+      vec3 a = realmSky(dir, fall);
+      vec3 b = realmSky(dir, floor(max(fall, 0.0)) + 1.001);
+      return mix(a, b, smoothstep(0.78, 1.0, fract(max(fall, 0.0))));
     }
     float diskNoise(vec2 xz, float r, float t){
       float a = atan(xz.y, xz.x);
@@ -516,14 +583,30 @@
       }
 
       if (uFall > 0.02){
+        float rid = mod(floor(uFall), 6.0);
         vec2 suv = (2.0 * gl_FragCoord.xy - uRes) / uRes.y;
         float rf = length(suv);
-        for (int i = 0; i < 8; i++){
-          float tRing = fract(uFall * 0.38 + float(i) * 0.125);
-          float rad = mix(1.28, 0.04, tRing * tRing);
-          float w = mix(11.0, 60.0, tRing);
-          float tun = exp(-abs(rf - rad) * w);
-          col += vec3(1.18, 0.76, 0.38) * tun * (1.0 - tRing) * (0.11 / (1.0 + uFall * 0.18)) * falling;
+        if (rid < 0.5){
+          vec3 rcol = vec3(1.18, 0.76, 0.38);
+          for (int i = 0; i < 8; i++){
+            float tRing = fract(uFall * 0.38 + float(i) * 0.125);
+            float rad = mix(1.28, 0.04, tRing * tRing);
+            float w = mix(11.0, 60.0, tRing);
+            float tun = exp(-abs(rf - rad) * w);
+            col += rcol * tun * (1.0 - tRing) * (0.1 / (1.0 + uFall * 0.18)) * falling;
+          }
+        } else if (rid > 0.5 && rid < 1.5){
+          col += vec3(1.0, 0.38, 0.08) * exp(-rf * 1.4) * 0.08 * falling;
+        } else if (rid > 2.5 && rid < 3.5){
+          vec2 w1 = vec2(0.34, 0.07);
+          vec2 w2 = vec2(-0.38, -0.1);
+          float d1 = length(suv - w1);
+          float d2 = length(suv - w2);
+          col *= 1.0 - smoothstep(0.22, 0.13, d1) * 0.85 - smoothstep(0.22, 0.13, d2) * 0.85;
+          col += vec3(1.15, 0.74, 0.38) * exp(-abs(d1 - 0.155) * 42.0) * 0.9 * falling;
+          col += vec3(1.15, 0.74, 0.38) * exp(-abs(d2 - 0.155) * 42.0) * 0.9 * falling;
+        } else if (rid > 4.5){
+          col += vec3(0.35, 0.7, 1.0) * exp(-rf * 1.6) * 0.06 * falling;
         }
       }
 
@@ -601,7 +684,7 @@
     in vec4 aData;
     in vec3 aCol;
     uniform mat4 uMVP;
-    uniform float uTime, uPulse, uPulseAmp, uCamDist;
+    uniform float uTime, uPulse, uPulseAmp, uCamDist, uFall;
     uniform vec3 uMass;
     uniform float uMassG, uPoint;
     out vec3 vCol;
@@ -622,11 +705,23 @@
       if (kind > 0.5 && kind < 1.5) vis = smoothstep(11.0, 22.0, uCamDist);
       else if (kind > 1.5) vis = smoothstep(12.0, 5.2, uCamDist);
       else vis = mix(0.45, 1.0, smoothstep(40.0, 16.0, uCamDist));
+      vec3 tint = aCol;
+      if (uFall > 0.12){
+        float id = mod(floor(uFall), 6.0);
+        vis = mix(vis, 0.85, smoothstep(0.12, 0.55, uFall));
+        if (id < 0.5) tint = mix(aCol, vec3(1.0, 0.72, 0.38), 0.55);
+        else if (id < 1.5) tint = vec3(1.1, 0.38, 0.08);
+        else if (id < 2.5) tint = vec3(0.95, 0.78, 0.52);
+        else if (id < 3.5) tint = vec3(1.0, 0.68, 0.32);
+        else if (id < 4.5) tint = vec3(0.35, 0.4, 0.55);
+        else tint = vec3(0.4, 0.75, 1.05);
+        if (id > 0.5 && id < 1.5) pos *= 0.55;
+      }
       gl_Position = uMVP * vec4(pos, 1.0);
       float size = (kind < 0.5) ? 2.2 : (kind < 1.5 ? 2.8 : 1.7);
       size += shock * 3.2;
       gl_PointSize = vis * size * uPoint / max(gl_Position.w, 0.4);
-      vCol = aCol + shock * vec3(1.0, 0.5, 0.14);
+      vCol = tint + shock * vec3(1.0, 0.5, 0.14);
       vCol *= vis * 0.48 / (0.16 + length(pos) * 0.045);
     }`;
 
@@ -648,7 +743,8 @@
     in vec4 aInstA;
     in vec4 aInstB;
     uniform mat4 uMVP;
-    uniform float uTime;
+    uniform float uTime, uFall;
+    uniform vec3 uCamPos, uCamFwd, uCamRight, uCamUp;
     out vec3 vN, vW, vColHint;
     void main(){
       float r = aInstA.x;
@@ -666,10 +762,50 @@
       mat3 rotY = mat3(c,0.0,s, 0.0,1.0,0.0, -s,0.0,c);
       mat3 rotX = mat3(1.0,0.0,0.0, 0.0,ct,-st, 0.0,st,ct);
       mat3 R = rotY * rotX;
-      vec3 wp = orbit + R * (aPos * scale);
+      float fly = smoothstep(0.1, 0.55, uFall);
+      float id = mod(floor(uFall), 6.0);
+      float lane = seed * 6.283 + floor(uFall) * 0.7;
+      float along = fract(seed * 2.17 + uFall * 0.42);
+      float zDist = mix(7.5, -2.2, along);
+      float rad = 0.55 + seed * 1.9;
+      vec3 flyPos = uCamPos + uCamFwd * zDist + uCamRight * cos(lane) * rad + uCamUp * sin(lane) * rad * 0.45;
+      float sc = scale;
+      float keep = 1.0;
+      if (id > 1.5 && id < 2.5){
+        if (seed < 0.18){
+          flyPos = uCamPos + uCamFwd * 3.6 + uCamRight * 2.05 + uCamUp * -0.45;
+          sc = mix(scale, 0.78, fly);
+        } else if (seed < 0.32){
+          flyPos = uCamPos + uCamFwd * 5.2 + uCamRight * -1.4 + uCamUp * 0.6;
+          sc = mix(scale, 0.12, fly);
+        } else keep = 0.0;
+      } else if (id > 0.5 && id < 1.5){
+        sc = mix(scale, 0.08 + seed * 0.11, fly);
+      } else if (id > 2.5 && id < 3.5){
+        keep = seed < 0.22 ? 1.0 : 0.0;
+        sc = mix(scale, 0.12 + seed * 0.1, fly);
+      } else if (id > 3.5 && id < 4.5){
+        keep = seed < 0.16 ? 1.0 : 0.0;
+        sc = mix(scale, 0.16, fly);
+        flyPos = uCamPos + uCamFwd * 4.5 + uCamRight * 1.8 + uCamUp * 0.5;
+      } else if (id > 4.5){
+        sc = mix(scale, 0.13 + seed * 0.16, fly);
+        keep = seed < 0.55 ? 1.0 : 0.0;
+      } else {
+        sc = mix(scale, 0.14 + seed * 0.2, fly);
+      }
+      sc *= keep;
+      if (keep < 0.5 && fly > 0.45){
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+        vW = vec3(0.0);
+        vN = vec3(0.0, 1.0, 0.0);
+        vColHint = vec3(0.0);
+        return;
+      }
+      vec3 wp = mix(orbit, flyPos, fly) + R * (aPos * max(sc, 0.001));
       vW = wp;
       vN = normalize(R * aNrm);
-      vColHint = vec3(seed, scale, r);
+      vColHint = vec3(seed, sc, id);
       gl_Position = uMVP * vec4(wp, 1.0);
     }`;
 
@@ -677,7 +813,7 @@
     precision highp float;
     in vec3 vN, vW, vColHint;
     uniform vec3 uCamPos;
-    uniform float uTime, uPulseAmp;
+    uniform float uTime, uPulseAmp, uFall;
     out vec4 o;
     float hash13(vec3 p){
       p = fract(p * 0.1031);
@@ -689,17 +825,22 @@
       vec3 v = normalize(uCamPos - vW);
       vec3 L = normalize(-vW);
       float ndl = max(0.0, dot(n, L));
-      float wrap = clamp(dot(n, L) * 0.55 + 0.45, 0.0, 1.0);
+      float wrap = clamp(dot(n, L) * 0.5 + 0.55, 0.0, 1.0);
       float crater = hash13(floor(n * 9.0 + vColHint.x * 7.0));
       float grain = hash13(n * 18.0 + vColHint.x);
       vec3 rock = mix(vec3(0.055, 0.048, 0.042), vec3(0.16, 0.12, 0.09), crater);
       rock = mix(rock, vec3(0.10, 0.09, 0.08), grain * 0.45);
-      if (vColHint.x > 0.62) rock = mix(rock, vec3(0.12, 0.11, 0.13), 0.35);
+      vec3 light = vec3(1.0, 0.70, 0.34);
+      float id = vColHint.z;
+      if (id > 0.5 && id < 1.5) { rock = mix(rock, vec3(0.22, 0.08, 0.03), 0.55); light = vec3(1.15, 0.48, 0.12); }
+      else if (id > 1.5 && id < 2.5) { rock = mix(rock, vec3(0.22, 0.16, 0.11), 0.4); light = vec3(1.0, 0.82, 0.58); }
+      else if (id > 4.5) { rock = mix(rock, vec3(0.4, 0.5, 0.58), 0.5); light = vec3(0.55, 0.78, 1.0); }
+      else if (id > 3.5 && id < 4.5) { rock = mix(rock, vec3(0.08, 0.09, 0.12), 0.4); light = vec3(0.65, 0.72, 0.9); }
       float illum = 1.6 / (length(vW) * 0.07 + 0.45);
-      vec3 gold = vec3(1.0, 0.70, 0.34) * ndl * illum;
+      vec3 gold = light * ndl * illum;
       float fres = pow(1.0 - max(dot(n, v), 0.0), 3.4);
-      vec3 atmos = vec3(1.0, 0.74, 0.42) * fres * ndl * 0.42;
-      vec3 col = rock * (0.06 + wrap * 0.55) + gold * rock * 3.2 + atmos;
+      vec3 atmos = light * fres * ndl * 0.42;
+      vec3 col = rock * (0.16 + wrap * 0.62) + gold * rock * 3.2 + atmos;
       col += uPulseAmp * gold * 0.12;
       vec3 rd = normalize(vW - uCamPos);
       float tca = dot(-uCamPos, rd);
@@ -1334,8 +1475,12 @@
       gl.uniformMatrix4fv(progPrism.u.uMVP, false, MVP);
       gl.uniform1f(progPrism.u.uTime, t);
       gl.uniform3f(progPrism.u.uCamPos, b.pos[0], b.pos[1], b.pos[2]);
+      gl.uniform3f(progPrism.u.uCamFwd, b.fwd[0], b.fwd[1], b.fwd[2]);
+      gl.uniform3f(progPrism.u.uCamRight, b.right[0], b.right[1], b.right[2]);
+      gl.uniform3f(progPrism.u.uCamUp, b.up[0], b.up[1], b.up[2]);
       gl.uniform1f(progPrism.u.uPulseAmp, pulseAmp);
-      if (cam.fall < 0.35) gl.drawArraysInstanced(gl.TRIANGLES, 0, mesh.count, nPrism);
+      gl.uniform1f(progPrism.u.uFall, cam.fall);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, mesh.count, nPrism);
 
       gl.depthMask(false);
       gl.enable(gl.BLEND);
@@ -1350,6 +1495,7 @@
       gl.uniform1f(progPt.u.uMassG, massG);
       gl.uniform1f(progPt.u.uPoint, Math.max(canvas.height / 900, 0.7));
       gl.uniform1f(progPt.u.uCamDist, cam.dist);
+      gl.uniform1f(progPt.u.uFall, cam.fall);
       gl.drawArrays(gl.POINTS, 0, nP);
 
       if (infalls.length) {
@@ -1429,8 +1575,9 @@
         const z = 1 / Math.sqrt(Math.max(0.05, 1 - 1 / Math.max(cam.dist, 1.05))) - 1;
         document.getElementById("zed").textContent = z.toFixed(3);
         const layerEl = document.getElementById("layer");
-        if (cam.fall > 0.04) layerEl.textContent = "STRATUM " + String(Math.floor(cam.fall) + 1).padStart(2, "0");
-        else layerEl.textContent = cam.dist > 28 ? "DEEP FIELD" : cam.dist > 14 ? "THE WELL" : cam.dist > 8 ? "PHOTON SPHERE" : cam.dist > 4.6 ? "THE THROAT" : "INNER COSMOS";
+        const realms = ["THE ARCHIVE", "EMBER SWARM", "PALE HOST", "TWIN WELLS", "THE QUIET", "COLD NURSERY"];
+        if (cam.fall > 0.04) layerEl.textContent = realms[Math.floor(cam.fall) % 6];
+        else layerEl.textContent = cam.dist > 28 ? "DEEP FIELD" : cam.dist > 14 ? "THE WELL" : cam.dist > 8 ? "PHOTON SPHERE" : cam.dist > 4.6 ? "THE THROAT" : "THE ARCHIVE";
         if (filterNode && ac) {
           filterNode.frequency.value = 140 + Math.max(0, 18 - cam.fall * 9) * 10 + pulseAmp * 220 + Math.sin(t * 0.35) * 24;
         }
