@@ -324,7 +324,7 @@
     out vec4 fragColor;
     uniform vec2 uRes;
     uniform vec3 uCamPos, uCamFwd, uCamRight, uCamUp;
-    uniform float uTime, uFov, uExposure, uPulse, uPulseAmp, uSteps, uCamDist;
+    uniform float uTime, uFov, uExposure, uPulse, uPulseAmp, uSteps, uCamDist, uFall;
 
     vec3 hsv2rgb(vec3 c){
       vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
@@ -392,18 +392,26 @@
       }
       return col;
     }
-    vec3 innerCosmos(vec3 dir){
-      vec3 d2 = normalize(vec3(dir.z, -dir.x, dir.y));
-      vec3 col = starfield(d2) * 1.55;
-      col += galaxyBand(d2, 2.4) * 3.2;
-      col += galaxyBand(d2.zxy, 5.1) * 1.4;
-      col += distantGalaxies(d2.zxy) * 1.1;
-      float rho = length(d2.xz);
-      float ring = exp(-abs(rho - 0.22) * 28.0) * (1.0 - abs(d2.y));
-      col += vec3(1.15, 0.74, 0.38) * ring * 1.35;
-      float well = smoothstep(0.08, 0.018, length(d2.xz - vec2(0.10, -0.03)));
-      col *= 1.0 - well * 0.92;
-      col += vec3(1.2, 0.8, 0.42) * well * 0.12;
+    vec3 innerCosmos(vec3 dir, float fall){
+      float oct = floor(fall);
+      float f = fract(max(fall, 0.0));
+      float a = oct * 1.173 + 0.37;
+      float c = cos(a), s = sin(a);
+      vec3 d = vec3(c * dir.x + s * dir.z, dir.y, -s * dir.x + c * dir.z);
+      d = normalize(vec3(d.z, -d.x, d.y));
+      float zoom = exp(f * 3.05);
+      vec3 z = normalize(vec3(d.x / zoom, d.y / zoom, d.z));
+      vec3 col = starfield(z) * 1.55;
+      col += galaxyBand(z, oct * 0.91 + 2.4) * 3.2;
+      col += galaxyBand(z.zxy, oct * 1.3 + 5.1) * 1.4;
+      col += distantGalaxies(z.zxy) * 1.1;
+      float rho = length(z.xy);
+      float ring = exp(-abs(rho - 0.17) * 24.0);
+      col += vec3(1.15, 0.74, 0.38) * ring * 1.45;
+      float well = smoothstep(0.10, 0.016, rho);
+      vec3 next = starfield(z.yzx) * 1.3 + galaxyBand(z.yzx, oct + 4.2) * 2.4;
+      next += vec3(1.2, 0.78, 0.4) * exp(-abs(length(z.yz) - 0.2) * 22.0) * 0.8;
+      col = mix(col * (1.0 - well * 0.92) + vec3(1.15, 0.76, 0.4) * well * 0.1, next, well * smoothstep(0.45, 1.0, f));
       return col;
     }
     float diskNoise(vec2 xz, float r, float t){
@@ -490,28 +498,41 @@
 
       float reveal = smoothstep(15.0, 4.6, uCamDist);
       float macro = smoothstep(14.0, 30.0, uCamDist);
+      float falling = smoothstep(0.0, 0.45, uFall);
       vec3 look = normalize(vel);
       if (!captured){
         col += transmit * starfield(look);
-        col += transmit * distantGalaxies(look) * (0.35 + 0.9 * macro);
-        col += transmit * galaxyBand(look, 0.35) * macro * 0.85;
+        col += transmit * distantGalaxies(look) * (0.35 + 0.9 * macro) * (1.0 - falling * 0.7);
+        col += transmit * galaxyBand(look, 0.35) * macro * 0.85 * (1.0 - falling);
       } else {
-        col *= 0.28;
-        col += innerCosmos(look) * (0.4 + 1.7 * reveal);
+        col *= 0.18;
+        col += innerCosmos(look, uFall) * (0.45 + 1.8 * reveal + 0.4 * falling);
       }
 
       float ring = exp(-abs(minR - 1.52) * 18.0);
       if (!captured){
-        col += ring * vec3(1.35, 0.92, 0.52) * 1.35;
+        col += ring * vec3(1.35, 0.92, 0.52) * (1.35 - falling * 0.4);
         col += ring * hsv2rgb(vec3(fract(0.08 + uTime * 0.03 + atan(rd.z, rd.x) * 0.15), 0.5, 0.55)) * 0.18;
+      }
+
+      if (uFall > 0.02){
+        vec2 suv = (2.0 * gl_FragCoord.xy - uRes) / uRes.y;
+        float rf = length(suv);
+        for (int i = 0; i < 8; i++){
+          float tRing = fract(uFall * 0.38 + float(i) * 0.125);
+          float rad = mix(1.28, 0.04, tRing * tRing);
+          float w = mix(11.0, 60.0, tRing);
+          float tun = exp(-abs(rf - rad) * w);
+          col += vec3(1.18, 0.76, 0.38) * tun * (1.0 - tRing) * (0.11 / (1.0 + uFall * 0.18)) * falling;
+        }
       }
 
       float impact = length(cross(uCamPos, rd));
       float jet = exp(-impact * 2.1) * smoothstep(0.22, 0.9, abs(rd.y)) * 0.06 * (1.0 - reveal * 0.5);
-      col += vec3(1.0, 0.68, 0.32) * jet * uExposure;
+      col += vec3(1.0, 0.68, 0.32) * jet * uExposure * (1.0 - falling);
 
       col *= uExposure;
-      col = col / (1.0 + col * 0.35);
+      col = col / (1.0 + col * (0.35 + falling * 0.45));
       fragColor = vec4(max(col, 0.0), 1.0);
     }`;
 
@@ -986,16 +1007,41 @@
       return { pos, fwd, right, up };
     }
 
-    const DIST_MIN = 2.32;
-    const DIST_MAX = 68;
+    const HERO = 16.4;
+    const THROAT_DIST = 2.42;
+    const DESCENT_K = 1.05;
+    const DESCENT_THROAT = Math.log(HERO / THROAT_DIST) / DESCENT_K;
+    const DESCENT_MIN = -1.85;
+    function distFromDescent(des) {
+      const d = Math.min(des, DESCENT_THROAT);
+      return HERO * Math.exp(-DESCENT_K * d);
+    }
+    function descentFromDist(dist) {
+      return -Math.log(Math.max(dist, THROAT_DIST) / HERO) / DESCENT_K;
+    }
     const qDist = parseFloat(new URLSearchParams(location.search).get("dist") || "");
+    const qFall = parseFloat(new URLSearchParams(location.search).get("fall") || "");
     const cam = {
       yaw: 0.55,
       pitch: 0.38,
-      dist: Number.isFinite(qDist) ? Math.max(DIST_MIN, Math.min(DIST_MAX, qDist)) : (reduced ? 16.4 : 26),
+      descent: Number.isFinite(qDist) ? descentFromDist(qDist) : (reduced ? 0 : descentFromDist(26)),
+      fall: Number.isFinite(qFall) ? Math.max(0, qFall) : 0,
+      dist: HERO,
       vy: 0, vp: 0, vd: 0,
       auto: true
     };
+    if (Number.isFinite(qFall) && qFall > 0) {
+      cam.descent = DESCENT_THROAT + qFall;
+    } else if (Number.isFinite(qDist) && qDist <= THROAT_DIST + 0.05) {
+      cam.descent = DESCENT_THROAT;
+    }
+    if (cam.descent <= DESCENT_THROAT) {
+      cam.fall = 0;
+      cam.dist = distFromDescent(cam.descent);
+    } else {
+      cam.fall = cam.descent - DESCENT_THROAT;
+      cam.dist = THROAT_DIST;
+    }
     let down = false, lx = 0, ly = 0, pinch = 0;
     let pulse = 8, pulseAmp = 0;
     let mass = [8, 0, 0], massG = 0;
@@ -1019,8 +1065,8 @@
     canvas.addEventListener("wheel", (e) => {
       e.preventDefault();
       cam.auto = false;
-      const mag = Math.min(Math.abs(e.deltaY), 90);
-      cam.vd += Math.sign(e.deltaY) * mag * 0.018;
+      const mag = Math.min(Math.abs(e.deltaY), 80);
+      cam.vd += Math.sign(e.deltaY) * mag * 0.0048;
     }, { passive: false });
     canvas.addEventListener("touchstart", (e) => {
       if (e.touches.length === 2) {
@@ -1037,7 +1083,7 @@
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
-        cam.dist = Math.max(DIST_MIN, Math.min(DIST_MAX, cam.dist * Math.exp(-(d - pinch) * 0.012)));
+        cam.vd -= (d - pinch) * 0.08;
         pinch = d;
       }
     }, { passive: false });
@@ -1187,7 +1233,9 @@
       if (!reduced) {
         const k = Math.min(t / 3.8, 1);
         const e = 1 - Math.pow(1 - k, 3);
-        if (t < 4.2 && !Number.isFinite(qDist)) cam.dist += (16.4 - cam.dist) * (0.6 * dt + 0.015);
+        if (t < 4.2 && !Number.isFinite(qDist) && !Number.isFinite(qFall)) {
+          cam.descent += (0 - cam.descent) * (0.6 * dt + 0.015);
+        }
         exposure = Math.min(1, Math.max(0, (t - 0.35) / 2.4));
         if (t > 2.4) document.getElementById("hud").classList.add("on");
         if (t > 2.6) document.body.classList.add("live");
@@ -1198,11 +1246,18 @@
       }
 
       if (cam.auto && t > 3) cam.vy += 0.018 * dt;
-      cam.vy *= 0.9; cam.vp *= 0.9; cam.vd *= 0.86;
+      cam.vy *= 0.9; cam.vp *= 0.9; cam.vd *= 0.92;
       cam.yaw += cam.vy;
       cam.pitch = Math.max(-1.15, Math.min(1.22, cam.pitch + cam.vp));
-      cam.dist *= Math.exp(cam.vd * dt * 0.85);
-      cam.dist = Math.max(DIST_MIN, Math.min(DIST_MAX, cam.dist));
+      cam.descent -= cam.vd * dt * 0.72;
+      if (cam.descent < DESCENT_MIN) { cam.descent = DESCENT_MIN; cam.vd = Math.max(0, cam.vd); }
+      if (cam.descent <= DESCENT_THROAT) {
+        cam.fall = 0;
+        cam.dist = distFromDescent(cam.descent);
+      } else {
+        cam.fall = cam.descent - DESCENT_THROAT;
+        cam.dist = THROAT_DIST;
+      }
 
       pulse += dt * 2.15;
       pulseAmp *= Math.pow(0.22, dt);
@@ -1267,6 +1322,7 @@
       gl.uniform1f(progBH.u.uPulseAmp, pulseAmp);
       gl.uniform1f(progBH.u.uSteps, steps);
       gl.uniform1f(progBH.u.uCamDist, cam.dist);
+      gl.uniform1f(progBH.u.uFall, cam.fall);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
       gl.enable(gl.DEPTH_TEST);
@@ -1279,7 +1335,7 @@
       gl.uniform1f(progPrism.u.uTime, t);
       gl.uniform3f(progPrism.u.uCamPos, b.pos[0], b.pos[1], b.pos[2]);
       gl.uniform1f(progPrism.u.uPulseAmp, pulseAmp);
-      gl.drawArraysInstanced(gl.TRIANGLES, 0, mesh.count, nPrism);
+      if (cam.fall < 0.35) gl.drawArraysInstanced(gl.TRIANGLES, 0, mesh.count, nPrism);
 
       gl.depthMask(false);
       gl.enable(gl.BLEND);
@@ -1369,13 +1425,14 @@
         const cc = Math.floor((proper % 1) * 100);
         document.getElementById("tau").innerHTML =
           String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0") + ".<span>" + String(cc).padStart(2, "0") + "</span>";
-        document.getElementById("rad").textContent = cam.dist.toFixed(2) + " Rs";
+        document.getElementById("rad").textContent = (cam.fall > 0.02 ? (cam.dist / Math.exp(cam.fall * 3.05)).toExponential(2) : cam.dist.toFixed(2)) + " Rs";
         const z = 1 / Math.sqrt(Math.max(0.05, 1 - 1 / Math.max(cam.dist, 1.05))) - 1;
         document.getElementById("zed").textContent = z.toFixed(3);
         const layerEl = document.getElementById("layer");
-        layerEl.textContent = cam.dist > 28 ? "DEEP FIELD" : cam.dist > 14 ? "THE WELL" : cam.dist > 8 ? "PHOTON SPHERE" : cam.dist > 4.6 ? "THE THROAT" : "INNER COSMOS";
+        if (cam.fall > 0.04) layerEl.textContent = "STRATUM " + String(Math.floor(cam.fall) + 1).padStart(2, "0");
+        else layerEl.textContent = cam.dist > 28 ? "DEEP FIELD" : cam.dist > 14 ? "THE WELL" : cam.dist > 8 ? "PHOTON SPHERE" : cam.dist > 4.6 ? "THE THROAT" : "INNER COSMOS";
         if (filterNode && ac) {
-          filterNode.frequency.value = 180 + cam.dist * 8 + pulseAmp * 280 + Math.sin(t * 0.35) * 30;
+          filterNode.frequency.value = 140 + Math.max(0, 18 - cam.fall * 9) * 10 + pulseAmp * 220 + Math.sin(t * 0.35) * 24;
         }
         if (fps < 36 && steps > 28) { steps -= 4; if (!mobile && renderScale > 0.45) { renderScale *= 0.92; resizeRT(); } }
         else if (fps > 56 && steps < stepsTarget) steps += 2;
