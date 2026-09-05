@@ -1,1 +1,1395 @@
-<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>PRISM / Event Horizon</title><style>html,body{margin:0;height:100%;overflow:hidden;background:#020207;color:#eee;font:11px system-ui;letter-spacing:.16em}#c{position:fixed;inset:0;width:100vw;height:100vh;width:100dvw;height:100dvh;touch-action:none}#hud{position:fixed;inset:0;padding:24px;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}h1{font:clamp(35px,8vw,88px) Georgia;margin:10px 0;line-height:.86;letter-spacing:.05em}.row{display:flex;justify-content:space-between;gap:16px}.tele{display:flex;gap:18px;flex-wrap:wrap}.tele b{display:block;color:#fff;font-size:14px;margin-top:5px}.audio{pointer-events:auto;background:#111;color:#eee;border:1px solid #776;padding:10px;letter-spacing:.12em}.wave{height:20px;width:100px;border-bottom:1px solid #c96;position:relative}.wave i{display:inline-block;width:2px;background:#d9a66d;margin:0 1px;vertical-align:bottom}</style></head><body><canvas id=c></canvas><div id=hud><div><small>PRISM / 001 — OBSERVATORY</small><h1>EVENT<br>HORIZON</h1><small>RELATIVISTIC FIELD STUDY · TOUCH ENABLED</small></div><div class=row><div class=tele><span>FPS<b id=fps>60</b></span><span>VELOCITY<b id=vel>0.00</b></span><span>PARTICLES<b id=pc></b></span><span>DISTORTION<b id=di>0.00</b></span></div><div><button class=audio id=au>[ AUDIO // INITIALIZE ]</button><div class=wave id=wave></div></div></div></div><script>(()=>{const C=document.querySelector('#c'),E=document.querySelector('#fps'),V=document.querySelector('#vel'),PC=document.querySelector('#pc'),DI=document.querySelector('#di'),W=document.querySelector('#wave'),mobile=matchMedia('(pointer:coarse)').matches,n=mobile?4200:12000;PC.textContent=n;let gl;try{gl=C.getContext('webgl',{antialias:false,alpha:false,powerPreference:'high-performance'})}catch(e){}if(!gl){document.body.innerHTML='<p style="padding:30px">WebGL unavailable. Please enable WebGL in Safari settings.</p>';return}const vs=`attribute vec3 p;attribute vec3 color;uniform mat4 M;uniform float pulse;varying vec3 v;void main(){float r=length(p.xz);vec3 q=p;float shock=exp(-abs(r-pulse)*3.0);q.y+=shock*.4;gl_Position=M*vec4(q,1.);gl_PointSize=2.0+shock*5.0;v=color+shock*vec3(1.,.25,.05);}`,fs=`precision mediump float;varying vec3 v;void main(){float d=length(gl_PointCoord-.5);float glow=pow(max(0.,1.-d*2.),2.);gl_FragColor=vec4(v*glow,glow);}`;function shader(t,s){let x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);return x}let P=gl.createProgram();gl.attachShader(P,shader(gl.VERTEX_SHADER,vs));gl.attachShader(P,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(P);gl.useProgram(P);let p=[],co=[];for(let i=0;i<n;i++){let a=Math.random()*6.28,r=1+Math.pow(Math.random(),.6)*6;p.push(Math.cos(a)*r,(Math.random()-.5)*(.12+.5/r),Math.sin(a)*r);let q=Math.random();co.push(.4+.6*q,.12+.4*q,.3+.7*q)}function buf(a,name){let b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(a),gl.DYNAMIC_DRAW);let l=gl.getAttribLocation(P,name);gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,3,gl.FLOAT,false,0,0);return b}let B=buf(p,'p');buf(co,'color');let yaw=0,pitch=0,vy=0,vx=0,down=false,dist=7,pinch=0,shock=0,last=performance.now(),frames=0,ft=last;function size(){let d=Math.min(devicePixelRatio||1,2);C.width=innerWidth*d;C.height=innerHeight*d;gl.viewport(0,0,C.width,C.height)}size();addEventListener('resize',size,{passive:true});function pt(e){return[e.clientX,e.clientY]}C.addEventListener('pointerdown',e=>{down=true;pinch=0;C.setPointerCapture(e.pointerId);C._x=e.clientX;C._y=e.clientY;shock=1});C.addEventListener('pointerup',()=>down=false);C.addEventListener('pointermove',e=>{if(down){vx+=(e.clientX-C._x)*.0008;vy+=(e.clientY-C._y)*.0008;C._x=e.clientX;C._y=e.clientY}},{passive:true});C.addEventListener('touchstart',e=>{if(e.touches.length===2)pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY)},{passive:false});C.addEventListener('touchmove',e=>{if(e.touches.length===2){e.preventDefault();let d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);dist=Math.max(3,Math.min(13,dist-(d-pinch)*.012));pinch=d}},{passive:false});let ac,an,gain;document.querySelector('#au').onclick=()=>{if(!ac){ac=new AudioContext();an=ac.createAnalyser();gain=ac.createGain();let o=ac.createOscillator();o.frequency.value=48;let l=ac.createOscillator();l.frequency.value=137;let lg=ac.createGain();lg.gain.value=.012;gain.gain.value=.025;o.connect(gain).connect(an).connect(ac.destination);l.connect(lg).connect(gain);o.start();l.start()}if(ac.state==='suspended')ac.resume();document.querySelector('#au').textContent='[ AUDIO // ONLINE ]'};function loop(now){requestAnimationFrame(loop);let dt=Math.min(.05,(now-last)/1000);last=now;vx*=.92;vy*=.92;yaw+=vx;pitch=Math.max(-1.2,Math.min(1.2,pitch+vy));shock+=dt*1.4;if(shock>7)shock=0;for(let i=0;i<n;i++){let x=p[i*3],z=p[i*3+2],r=Math.hypot(x,z),a=Math.atan2(z,x)+dt*(.15+1.4/(r+.4));p[i*3]=Math.cos(a)*r;p[i*3+2]=Math.sin(a)*r}gl.bindBuffer(gl.ARRAY_BUFFER,B);gl.bufferSubData(gl.ARRAY_BUFFER,0,new Float32Array(p));let cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch),f=1/dist,m=[cy*f,sp*sy*f,-sy*f,0,sy*sp*f,cp*f,cy*sp*f,0,sy, -sp,cy,0,0,0,-.25,1];gl.uniformMatrix4fv(gl.getUniformLocation(P,'M'),false,new Float32Array(m));gl.uniform1f(gl.getUniformLocation(P,'pulse'),shock);gl.clearColor(.006,.004,.015,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.POINTS,0,n);frames++;if(now-ft>500){E.textContent=Math.round(frames*1000/(now-ft));V.textContent=(Math.abs(vx)+Math.abs(vy)*2).toFixed(2);DI.textContent=(Math.abs(vx)+Math.abs(vy)+.3).toFixed(2);frames=0;ft=now}W.innerHTML=Array.from({length:18},(_,i)=>'<i style="height:'+((Math.sin(now/120+i)*.5+.5)*18+2)+'px"></i>').join('')}loop(last)})()</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#05030a">
+  <meta name="description" content="PRISM / Event Horizon — a real-time Schwarzschild observatory.">
+  <title>PRISM / Event Horizon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='14' fill='none' stroke='%23d9a66d' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%2305030a'/%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%23d9a66d' stroke-width='.6' opacity='.5'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --gold: #d9a66d;
+      --ivory: #f3ead8;
+      --void: #05030a;
+      --dim: rgba(243, 234, 216, 0.42);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: var(--void);
+      color: var(--ivory);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      letter-spacing: 0.14em;
+      cursor: crosshair;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+    #grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.07;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      z-index: 2;
+    }
+    #vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+      background: radial-gradient(ellipse at center, transparent 42%, rgba(5, 3, 10, 0.55) 100%);
+    }
+    #hud {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      padding: max(22px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+    #hud.on { opacity: 1; }
+    .kicker {
+      font-size: 10px;
+      color: var(--gold);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-weight: 500;
+      font-size: clamp(52px, 10.5vw, 124px);
+      line-height: 0.8;
+      letter-spacing: 0.02em;
+      margin: 10px 0 14px;
+      color: var(--ivory);
+    }
+    h1 em {
+      font-style: italic;
+      display: block;
+      color: var(--gold);
+    }
+    .sub {
+      font-size: 10px;
+      color: var(--dim);
+      max-width: 28em;
+      line-height: 1.7;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+    }
+    .clock {
+      text-align: right;
+      font-size: 10px;
+      color: var(--dim);
+      letter-spacing: 0.2em;
+    }
+    .clock b {
+      display: block;
+      margin-top: 8px;
+      color: var(--ivory);
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+    }
+    .clock b span { color: var(--gold); }
+    .bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .tele {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      pointer-events: none;
+      padding: 10px 12px;
+      border-radius: 18px;
+      background: rgba(12, 10, 16, 0.28);
+      backdrop-filter: blur(26px) saturate(190%) brightness(1.35);
+      -webkit-backdrop-filter: blur(26px) saturate(190%) brightness(1.35);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+        0 18px 40px rgba(0, 0, 0, 0.28);
+    }
+    .tele span {
+      min-width: 88px;
+      padding: 6px 12px;
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .tele b {
+      display: block;
+      margin-top: 5px;
+      color: var(--ivory);
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      font-weight: 500;
+    }
+    .hint {
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .audio-wrap {
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    button.audio {
+      pointer-events: auto;
+      cursor: pointer;
+      background: rgba(12, 10, 16, 0.4);
+      color: var(--ivory);
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font: 500 10px/1 "IBM Plex Mono", ui-monospace, monospace;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      backdrop-filter: blur(26px) saturate(190%) brightness(1.35);
+      -webkit-backdrop-filter: blur(26px) saturate(190%) brightness(1.35);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 0 0 1px rgba(217, 166, 109, 0.35);
+    }
+    button.audio:hover { color: var(--gold); }
+    #wave {
+      height: 22px;
+      width: 108px;
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      justify-content: flex-end;
+    }
+    #wave i {
+      display: block;
+      width: 2px;
+      background: var(--gold);
+      opacity: 0.85;
+      height: 3px;
+    }
+    #mark {
+      position: fixed;
+      inset: 0;
+      z-index: 8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      background: transparent;
+      opacity: 1;
+      transition: opacity 1.4s ease;
+    }
+    #mark.out { opacity: 0; }
+    body.live #mark { display: none; }
+    #mark strong {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-weight: 500;
+      font-size: clamp(64px, 14vw, 180px);
+      letter-spacing: 0.18em;
+      font-style: italic;
+      color: var(--ivory);
+    }
+    #mark small {
+      margin-top: 8px;
+      font-size: 11px;
+      letter-spacing: 0.42em;
+      color: var(--gold);
+      text-transform: uppercase;
+    }
+    .lb {
+      position: fixed;
+      left: 0; right: 0;
+      height: 16vh;
+      background: #020107;
+      z-index: 7;
+      pointer-events: none;
+      transition: height 1.6s cubic-bezier(.22,1,.36,1);
+    }
+    .lb.top { top: 0; }
+    .lb.bot { bottom: 0; }
+    body.live .lb { height: 0; }
+    #fail {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      z-index: 20;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      line-height: 1.6;
+    }
+    @media (max-width: 720px) {
+      .tele span { min-width: 72px; padding: 4px 8px; }
+      .clock { display: none; }
+      h1 { font-size: clamp(44px, 16vw, 80px); }
+      .hint { max-width: 100%; }
+      .audio-wrap { width: 100%; align-items: stretch; }
+      button.audio { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #hud { opacity: 1; }
+      #mark { display: none; }
+      .lb { height: 0; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="grain"></div>
+  <div id="vignette"></div>
+  <i class="lb top"></i>
+  <i class="lb bot"></i>
+  <div id="mark"><strong>PRISM</strong><small>observatory 001</small></div>
+  <div id="hud">
+    <div class="top">
+      <div>
+        <div class="kicker">Prism / 001 — Observatory</div>
+        <h1>EVENT<em>HORIZON</em></h1>
+        <div class="sub">Relativistic field study · null geodesics · glass prisms in orbit</div>
+      </div>
+      <div class="clock">
+        Proper time τ
+        <b id="tau">00:00.<span>00</span></b>
+        <div style="margin-top:14px">Radius <b id="rad" style="font-size:13px;margin-top:4px">16.2 Rs</b></div>
+        <div style="margin-top:10px">Redshift z <b id="zed" style="font-size:13px;margin-top:4px">0.032</b></div>
+      </div>
+    </div>
+    <div class="bottom">
+      <div>
+        <div class="hint" id="hint">Drag to orbit · scroll to approach · click to drop mass</div>
+        <div class="tele">
+          <span>FPS<b id="fps">—</b></span>
+          <span>Particles<b id="pc">—</b></span>
+          <span>Prisms<b id="pr">—</b></span>
+          <span>Steps<b id="st">—</b></span>
+          <span>Pulse<b id="pu">0.00</b></span>
+        </div>
+      </div>
+      <div class="audio-wrap">
+        <button class="audio" id="au" type="button">[ Audio // Initialize ]</button>
+        <div id="wave"></div>
+      </div>
+    </div>
+  </div>
+  <div id="fail"></div>
+  <script>
+  (() => {
+    const canvas = document.getElementById("c");
+    const failEl = document.getElementById("fail");
+    const mobile = matchMedia("(pointer: coarse)").matches || innerWidth < 740;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches
+      || /(?:\?|&)live=1(?:&|$)/.test(location.search);
+
+    function showFail(msg) {
+      failEl.style.display = "flex";
+      failEl.textContent = msg;
+    }
+
+    const gl = canvas.getContext("webgl2", {
+      alpha: false,
+      antialias: false,
+      depth: true,
+      powerPreference: "high-performance",
+      premultipliedAlpha: false
+    });
+    if (reduced) {
+      const mark = document.getElementById("mark");
+      mark.classList.add("out");
+      mark.style.display = "none";
+      document.getElementById("hud").classList.add("on");
+      document.body.classList.add("live");
+    }
+
+    if (!gl) {
+      showFail("WebGL2 is required for PRISM. Enable it in your browser settings.");
+      return;
+    }
+
+    const extColor = gl.getExtension("EXT_color_buffer_float") || gl.getExtension("EXT_color_buffer_half_float");
+    const extLinear = gl.getExtension("OES_texture_float_linear");
+    const canHDR = !!(extColor && gl.getExtension("EXT_color_buffer_float"));
+
+    function compile(type, src, name) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        throw new Error((name || "shader") + "\n" + gl.getShaderInfoLog(s));
+      }
+      return s;
+    }
+    function makeProgram(vs, fs, name) {
+      const p = gl.createProgram();
+      gl.attachShader(p, compile(gl.VERTEX_SHADER, vs, name + " VS"));
+      gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs, name + " FS"));
+      gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+        throw new Error(name + " link\n" + gl.getProgramInfoLog(p));
+      }
+      const u = {}, a = {};
+      const nu = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+      for (let i = 0; i < nu; i++) {
+        const info = gl.getActiveUniform(p, i);
+        u[info.name.replace(/[0-9\[\]]+$/, "")] = gl.getUniformLocation(p, info.name);
+        u[info.name] = gl.getUniformLocation(p, info.name);
+      }
+      const na = gl.getProgramParameter(p, gl.ACTIVE_ATTRIBUTES);
+      for (let i = 0; i < na; i++) {
+        const info = gl.getActiveAttrib(p, i);
+        a[info.name] = gl.getAttribLocation(p, info.name);
+      }
+      return { p, u, a };
+    }
+
+    const VS_QUAD = `#version 300 es
+    in vec2 aPos;
+    out vec2 vUv;
+    void main(){
+      vUv = aPos * 0.5 + 0.5;
+      gl_Position = vec4(aPos, 0.0, 1.0);
+    }`;
+
+    const FS_BH = `#version 300 es
+    precision highp float;
+    in vec2 vUv;
+    out vec4 fragColor;
+    uniform vec2 uRes;
+    uniform vec3 uCamPos, uCamFwd, uCamRight, uCamUp;
+    uniform float uTime, uFov, uExposure, uPulse, uPulseAmp, uSteps;
+
+    vec3 hsv2rgb(vec3 c){
+      vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+      vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+      return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    }
+    float hash13(vec3 p){
+      p = fract(p * 0.1031);
+      p += dot(p, p.yzx + 33.33);
+      return fract((p.x + p.y) * p.z);
+    }
+    vec3 blackbody(float t){
+      vec3 cold = vec3(0.35, 0.05, 0.015);
+      vec3 warm = vec3(1.0, 0.38, 0.08);
+      vec3 gold = vec3(1.0, 0.72, 0.38);
+      vec3 hot  = vec3(1.15, 0.95, 0.82);
+      vec3 c = mix(cold, warm, smoothstep(0.0, 0.28, t));
+      c = mix(c, gold, smoothstep(0.22, 0.62, t));
+      c = mix(c, hot,  smoothstep(0.55, 1.0, t));
+      return c;
+    }
+    vec3 starfield(vec3 dir){
+      vec3 col = vec3(0.004, 0.005, 0.012);
+      float band = exp(-pow(dir.y * 2.4, 2.0));
+      col += vec3(0.22, 0.18, 0.28) * band * 0.07;
+      col += vec3(0.55, 0.32, 0.12) * exp(-pow(dir.y * 1.4 - 0.15, 2.0) * 8.0) * 0.03;
+      for (int k = 0; k < 3; k++){
+        float scale = exp2(float(k) * 1.85 + 5.0);
+        vec3 p = dir * scale;
+        vec3 id = floor(p);
+        vec3 f = fract(p) - 0.5;
+        float n = hash13(id);
+        float br = smoothstep(0.93, 0.998, n);
+        float d2 = dot(f, f);
+        vec3 tint = mix(vec3(0.75, 0.85, 1.15), vec3(1.1, 0.85, 0.55), hash13(id + 4.2));
+        col += br * tint * exp(-d2 * 46.0) * (0.35 + 0.8 * hash13(id + 9.1));
+      }
+      return col;
+    }
+    float diskNoise(vec2 xz, float r, float t){
+      float a = atan(xz.y, xz.x);
+      float spiral = a * 2.4 + r * 0.55 - t * 1.35;
+      float arms = 0.52 + 0.48 * sin(spiral);
+      arms *= 0.6 + 0.4 * sin(a * 5.0 - t * 2.1 + r * 0.8);
+      float hotspots = pow(0.5 + 0.5 * sin(a * 9.0 + t * 3.4 - r * 1.6), 3.5);
+      float ripple = 0.82 + 0.18 * sin(r * 5.5 - t * 2.2);
+      return arms * ripple * (0.72 + 0.5 * hotspots);
+    }
+
+    const float RS = 1.0;
+    const float DISK_IN = 3.02;
+    const float DISK_OUT = 15.5;
+
+    void main(){
+      vec2 uv = (2.0 * gl_FragCoord.xy - uRes) / uRes.y;
+      vec3 rd = normalize(uCamFwd + uv.x * uCamRight * uFov + uv.y * uCamUp * uFov);
+      vec3 pos = uCamPos;
+      vec3 vel = rd;
+
+      vec3 Lvec = cross(pos, vel);
+      float L2 = dot(Lvec, Lvec);
+
+      vec3 col = vec3(0.0);
+      float transmit = 1.0;
+      float minR = length(pos);
+      bool captured = false;
+      bool escaped = false;
+      int hits = 0;
+      int maxSteps = int(uSteps + 0.5);
+
+      for (int i = 0; i < 120; i++){
+        if (i >= maxSteps) break;
+        float r = length(pos);
+        minR = min(minR, r);
+        if (r < 1.02) { captured = true; break; }
+        if (r > 48.0 && i > 6) { escaped = true; break; }
+
+        float h = 0.15 * clamp(r - 0.42, 0.045, 3.2);
+        float r5 = r * r * r * r * r;
+        vec3 acc = (-1.5 * RS * L2 / max(r5, 1e-6)) * pos;
+        vec3 p1 = pos + vel * h + 0.5 * acc * h * h;
+        float r1 = length(p1);
+        float r15 = r1 * r1 * r1 * r1 * r1;
+        vec3 acc1 = (-1.5 * RS * L2 / max(r15, 1e-6)) * p1;
+        vec3 prev = pos;
+        vel = vel + 0.5 * (acc + acc1) * h;
+        pos = p1;
+
+        if (prev.y * pos.y < 0.0 && hits < 3){
+          float tHit = prev.y / (prev.y - pos.y);
+          vec3 hit = mix(prev, pos, clamp(tHit, 0.0, 1.0));
+          float rho = length(hit.xz);
+          if (rho > DISK_IN && rho < DISK_OUT){
+            hits++;
+            float xr = DISK_IN / rho;
+            float temp = pow(DISK_IN / rho, 0.75) * pow(max(0.001, 1.0 - sqrt(xr)), 0.25);
+            float gRed = sqrt(max(0.02, 1.0 - RS / rho));
+            temp *= gRed;
+            float vk = sqrt(0.5 / rho);
+            vec3 tng = normalize(vec3(-hit.z, 0.0, hit.x));
+            vec3 vdisk = tng * vk;
+            vec3 phDir = normalize(-vel);
+            float ndotv = dot(phDir, vdisk);
+            float dop = sqrt(max(0.05, 1.0 - vk * vk)) / max(0.12, 1.0 - ndotv);
+            float beam = pow(clamp(dop, 0.25, 3.6), 3.2);
+            float n = diskNoise(hit.xz, rho, uTime);
+            float edge = smoothstep(DISK_IN, DISK_IN + 0.55, rho) * smoothstep(DISK_OUT, DISK_OUT - 3.2, rho);
+            float pulse = exp(-abs(rho - uPulse) * 3.4) * uPulseAmp;
+            vec3 dcol = blackbody(clamp(temp * 1.35, 0.0, 1.0));
+            float dens = n * edge * (1.15 + pulse * 2.4);
+            vec3 add = dcol * dens * beam * 2.4;
+            add += pulse * hsv2rgb(vec3(fract(rho * 0.12 + uTime * 0.05), 0.62, 1.0)) * 0.55;
+            col += transmit * add;
+            transmit *= 1.0 - 0.28 * dens;
+          }
+        }
+
+        float fog = 0.018 / (r * r + 0.8);
+        col += transmit * vec3(1.0, 0.62, 0.28) * fog * h * 2.2;
+      }
+
+      if (!captured){
+        col += transmit * starfield(normalize(vel));
+      } else {
+        col *= 0.55;
+      }
+
+      float ring = exp(-abs(minR - 1.52) * 18.0);
+      if (!captured){
+        col += ring * vec3(1.35, 0.92, 0.52) * 1.35;
+        col += ring * hsv2rgb(vec3(fract(0.08 + uTime * 0.03 + atan(rd.z, rd.x) * 0.15), 0.5, 0.55)) * 0.28;
+      }
+
+      float impact = length(cross(uCamPos, rd));
+      float jet = exp(-impact * 1.6) * smoothstep(0.15, 0.85, abs(rd.y)) * 0.12;
+      col += vec3(0.55, 0.72, 1.1) * jet * uExposure;
+
+      col *= uExposure;
+      col = col / (1.0 + col * 0.35);
+      fragColor = vec4(max(col, 0.0), 1.0);
+    }`;
+
+    const FS_BRIGHT = `#version 300 es
+    precision highp float;
+    in vec2 vUv;
+    out vec4 fragColor;
+    uniform sampler2D uTex;
+    void main(){
+      vec3 c = texture(uTex, vUv).rgb;
+      float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      float k = smoothstep(0.82, 1.45, l);
+      fragColor = vec4(c * k, 1.0);
+    }`;
+
+    const FS_BLUR = `#version 300 es
+    precision highp float;
+    in vec2 vUv;
+    out vec4 fragColor;
+    uniform sampler2D uTex;
+    uniform vec2 uDir;
+    void main(){
+      vec2 px = uDir;
+      vec3 c = texture(uTex, vUv).rgb * 0.227027;
+      c += texture(uTex, vUv + px).rgb * 0.1945946;
+      c += texture(uTex, vUv - px).rgb * 0.1945946;
+      c += texture(uTex, vUv + px * 2.0).rgb * 0.1216216;
+      c += texture(uTex, vUv - px * 2.0).rgb * 0.1216216;
+      c += texture(uTex, vUv + px * 3.0).rgb * 0.054054;
+      c += texture(uTex, vUv - px * 3.0).rgb * 0.054054;
+      c += texture(uTex, vUv + px * 4.0).rgb * 0.016216;
+      c += texture(uTex, vUv - px * 4.0).rgb * 0.016216;
+      fragColor = vec4(c, 1.0);
+    }`;
+
+    const FS_COMP = `#version 300 es
+    precision highp float;
+    in vec2 vUv;
+    out vec4 fragColor;
+    uniform sampler2D uScene, uBloom, uStreak;
+    uniform vec2 uRes;
+    uniform float uTime, uCA;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    void main(){
+      vec2 uv = vUv;
+      vec2 c = uv - 0.5;
+      float r = length(c);
+      vec2 dir = c / (r + 1e-4);
+      float ca = uCA * (0.0015 + 0.006 * r * r);
+      vec3 col;
+      col.r = texture(uScene, uv + dir * ca * 1.4).r;
+      col.g = texture(uScene, uv).g;
+      col.b = texture(uScene, uv - dir * ca * 1.8).b;
+      vec3 bloom = texture(uBloom, uv).rgb;
+      vec3 streak = texture(uStreak, uv).rgb;
+      col += bloom * 0.52 + streak * 0.38;
+      float vig = smoothstep(1.25, 0.25, r);
+      col *= vig;
+      float g = (hash(gl_FragCoord.xy + fract(uTime) * 17.0) - 0.5) * 0.045;
+      col += g;
+      col = pow(max(col, 0.0), vec3(0.92));
+      fragColor = vec4(col, 1.0);
+    }`;
+
+    const VS_PT = `#version 300 es
+    in vec4 aData;
+    in vec3 aCol;
+    uniform mat4 uMVP;
+    uniform float uTime, uPulse, uPulseAmp;
+    uniform vec3 uMass;
+    uniform float uMassG, uPoint;
+    out vec3 vCol;
+    void main(){
+      float r = aData.x;
+      float y = aData.y;
+      float phase = aData.z;
+      float kind = aData.w;
+      float omega = (kind < 0.5) ? (0.55 / sqrt(r + 0.2)) : (kind < 1.5 ? 0.12 : 0.22 / sqrt(r + 0.4));
+      float a = phase + uTime * omega;
+      vec3 pos;
+      if (kind > 1.5 && kind < 2.5){
+        float s = fract(phase + uTime * 0.08);
+        float h = mix(-11.0, 11.0, s);
+        float rad = 0.18 + abs(h) * 0.04;
+        pos = vec3(cos(a) * rad, h, sin(a) * rad);
+      } else {
+        pos = vec3(cos(a) * r, y, sin(a) * r);
+      }
+      float shock = exp(-abs(length(pos.xz) - uPulse) * 2.8) * uPulseAmp;
+      pos.y += shock * 0.45;
+      vec3 d = pos - uMass;
+      float d2 = dot(d, d) + 0.55;
+      pos += d * (-uMassG / d2);
+      gl_Position = uMVP * vec4(pos, 1.0);
+      float size = (kind < 0.5) ? 2.4 : (kind < 1.5 ? 3.6 : 2.0);
+      size += shock * 5.0;
+      gl_PointSize = size * uPoint / max(gl_Position.w, 0.4);
+      vCol = aCol + shock * vec3(1.1, 0.45, 0.12);
+      vCol *= 0.55 / (0.18 + length(pos) * 0.05);
+    }`;
+
+    const FS_PT = `#version 300 es
+    precision mediump float;
+    in vec3 vCol;
+    out vec4 o;
+    void main(){
+      vec2 p = gl_PointCoord * 2.0 - 1.0;
+      float d = dot(p, p);
+      if (d > 1.0) discard;
+      float g = exp(-d * 3.4);
+      o = vec4(vCol * g, 1.0);
+    }`;
+
+    const VS_PRISM = `#version 300 es
+    in vec3 aPos;
+    in vec3 aNrm;
+    in vec4 aInstA;
+    in vec4 aInstB;
+    uniform mat4 uMVP;
+    uniform float uTime;
+    out vec3 vN, vW, vColHint;
+    void main(){
+      float r = aInstA.x;
+      float phase = aInstA.y;
+      float y = aInstA.z;
+      float scale = aInstA.w;
+      float spin = aInstB.x;
+      float tilt = aInstB.y;
+      float hue = aInstB.z;
+      float omega = 0.42 / sqrt(r + 0.3);
+      float a = phase + uTime * omega;
+      vec3 orbit = vec3(cos(a) * r, y, sin(a) * r);
+      float c = cos(uTime * spin), s = sin(uTime * spin);
+      float ct = cos(tilt), st = sin(tilt);
+      mat3 rotY = mat3(c,0.0,s, 0.0,1.0,0.0, -s,0.0,c);
+      mat3 rotX = mat3(1.0,0.0,0.0, 0.0,ct,-st, 0.0,st,ct);
+      mat3 R = rotY * rotX;
+      vec3 wp = orbit + R * (aPos * scale);
+      vW = wp;
+      vN = normalize(R * aNrm);
+      vColHint = vec3(hue, scale, r);
+      gl_Position = uMVP * vec4(wp, 1.0);
+    }`;
+
+    const FS_PRISM = `#version 300 es
+    precision highp float;
+    in vec3 vN, vW, vColHint;
+    uniform vec3 uCamPos;
+    uniform float uTime, uPulseAmp;
+    out vec4 o;
+    vec3 hsv2rgb(vec3 c){
+      vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+      vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+      return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    }
+    void main(){
+      vec3 n = normalize(vN);
+      vec3 v = normalize(uCamPos - vW);
+      vec3 toHole = normalize(-vW);
+      float ndl = max(0.0, dot(n, toHole));
+      float fres = pow(1.0 - max(dot(n, v), 0.0), 2.6);
+      float hole = 0.55 / (dot(vW, vW) * 0.06 + 0.35);
+      vec3 base = vec3(0.16, 0.13, 0.1);
+      vec3 gold = vec3(1.0, 0.78, 0.45) * hole * ndl;
+      vec3 spec = vec3(1.0, 0.92, 0.75) * fres;
+      vec3 irid = hsv2rgb(vec3(fract(vColHint.x + fres * 0.35 + uTime * 0.02), 0.5, 0.7)) * fres;
+      vec3 col = base * (0.25 + ndl) + gold + spec * 0.85 + irid * 0.65;
+      col += uPulseAmp * irid * 0.5;
+      float alpha = 0.28 + fres * 0.62;
+      vec3 rd = normalize(vW - uCamPos);
+      float tca = dot(-uCamPos, rd);
+      float dist = length(vW - uCamPos);
+      if (tca > 0.0 && tca < dist){
+        float d2 = dot(uCamPos, uCamPos) - tca * tca;
+        if (d2 < 1.05) discard;
+      }
+      o = vec4(col, alpha);
+    }`;
+
+    const VS_INFALL = `#version 300 es
+    in vec3 aPos;
+    uniform mat4 uMVP;
+    uniform float uPoint;
+    out vec3 vCol;
+    void main(){
+      gl_Position = uMVP * vec4(aPos, 1.0);
+      gl_PointSize = 7.0 * uPoint / max(gl_Position.w, 0.35);
+      float r = length(aPos);
+      vCol = mix(vec3(1.2, 0.95, 0.7), vec3(1.4, 0.4, 0.1), smoothstep(6.0, 1.4, r));
+    }`;
+
+    let progBH, progBright, progBlur, progComp, progPt, progPrism, progInfall;
+    try {
+      progBH = makeProgram(VS_QUAD, FS_BH, "BH");
+      progBright = makeProgram(VS_QUAD, FS_BRIGHT, "BRIGHT");
+      progBlur = makeProgram(VS_QUAD, FS_BLUR, "BLUR");
+      progComp = makeProgram(VS_QUAD, FS_COMP, "COMP");
+      progPt = makeProgram(VS_PT, FS_PT, "PT");
+      progPrism = makeProgram(VS_PRISM, FS_PRISM, "PRISM");
+      progInfall = makeProgram(VS_INFALL, FS_PT, "INFALL");
+    } catch (err) {
+      showFail(String(err.message || err));
+      return;
+    }
+
+    const quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+
+    function makeQuadVao(prog) {
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+      gl.enableVertexAttribArray(prog.a.aPos);
+      gl.vertexAttribPointer(prog.a.aPos, 2, gl.FLOAT, false, 0, 0);
+      gl.bindVertexArray(null);
+      return vao;
+    }
+    const vaoBH = makeQuadVao(progBH);
+    const vaoBright = makeQuadVao(progBright);
+    const vaoBlur = makeQuadVao(progBlur);
+    const vaoComp = makeQuadVao(progComp);
+
+    function bindQuad(prog) {
+      if (prog === progBH) gl.bindVertexArray(vaoBH);
+      else if (prog === progBright) gl.bindVertexArray(vaoBright);
+      else if (prog === progBlur) gl.bindVertexArray(vaoBlur);
+      else gl.bindVertexArray(vaoComp);
+    }
+
+    const nDisk = mobile ? 9000 : 24000;
+    const nHalo = mobile ? 900 : 2800;
+    const nJet  = mobile ? 1000 : 3200;
+    const nSpark = mobile ? 700 : 2200;
+    const nP = nDisk + nHalo + nJet + nSpark;
+    const pData = new Float32Array(nP * 4);
+    const pCol = new Float32Array(nP * 3);
+    let pi = 0;
+    function pushP(r, y, phase, kind, col) {
+      const i = pi++;
+      pData[i*4] = r; pData[i*4+1] = y; pData[i*4+2] = phase; pData[i*4+3] = kind;
+      pCol[i*3] = col[0]; pCol[i*3+1] = col[1]; pCol[i*3+2] = col[2];
+    }
+    for (let i = 0; i < nDisk; i++) {
+      const r = 3.2 + Math.pow(Math.random(), 0.55) * 12.5;
+      const y = (Math.random() - 0.5) * (0.05 + 0.18 / (r * 0.2));
+      const t = Math.max(0, 1 - (r - 3.2) / 12);
+      pushP(r, y, Math.random() * 6.283, 0, [
+        0.55 + 0.7 * t, 0.18 + 0.45 * t, 0.06 + 0.22 * t
+      ]);
+    }
+    for (let i = 0; i < nHalo; i++) {
+      const r = 8 + Math.pow(Math.random(), 0.7) * 12;
+      const y = (Math.random() - 0.5) * 1.1;
+      pushP(r, y, Math.random() * 6.283, 1, [0.55, 0.42, 0.62]);
+    }
+    for (let i = 0; i < nJet; i++) {
+      pushP(0.4 + Math.random() * 0.3, 0, Math.random() * 6.283, 2, [0.45, 0.7, 1.15]);
+    }
+    for (let i = 0; i < nSpark; i++) {
+      const r = 3.4 + Math.random() * 8;
+      pushP(r, (Math.random() - 0.5) * 0.2, Math.random() * 6.283, 0.8, [1.1, 0.75, 0.35]);
+    }
+    const pBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, pData, gl.STATIC_DRAW);
+    const pColBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pColBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, pCol, gl.STATIC_DRAW);
+    const vaoPt = gl.createVertexArray();
+    gl.bindVertexArray(vaoPt);
+    gl.bindBuffer(gl.ARRAY_BUFFER, pBuf);
+    gl.enableVertexAttribArray(progPt.a.aData);
+    gl.vertexAttribPointer(progPt.a.aData, 4, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, pColBuf);
+    gl.enableVertexAttribArray(progPt.a.aCol);
+    gl.vertexAttribPointer(progPt.a.aCol, 3, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+
+    function prismMesh() {
+      const z = 0.62, r = 1;
+      const v = [];
+      for (let k = 0; k < 2; k++) {
+        const zz = k ? z : -z;
+        for (let i = 0; i < 3; i++) {
+          const a = i * Math.PI * 2 / 3 + Math.PI / 2;
+          v.push([Math.cos(a) * r, Math.sin(a) * r, zz]);
+        }
+      }
+      const idx = [0,1,2, 3,5,4, 0,3,4, 0,4,1, 1,4,5, 1,5,2, 2,5,3, 2,3,0];
+      const pos = [], nrm = [];
+      for (let i = 0; i < idx.length; i += 3) {
+        const A = v[idx[i]], B = v[idx[i+1]], C = v[idx[i+2]];
+        const ab = [B[0]-A[0], B[1]-A[1], B[2]-A[2]];
+        const ac = [C[0]-A[0], C[1]-A[1], C[2]-A[2]];
+        let nx = ab[1]*ac[2]-ab[2]*ac[1], ny = ab[2]*ac[0]-ab[0]*ac[2], nz = ab[0]*ac[1]-ab[1]*ac[0];
+        const l = Math.hypot(nx, ny, nz) || 1;
+        nx /= l; ny /= l; nz /= l;
+        for (const P of [A, B, C]) { pos.push(...P); nrm.push(nx, ny, nz); }
+      }
+      return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), count: idx.length };
+    }
+    const mesh = prismMesh();
+    const nPrism = mobile ? 140 : 420;
+    const instA = new Float32Array(nPrism * 4);
+    const instB = new Float32Array(nPrism * 4);
+    for (let i = 0; i < nPrism; i++) {
+      const large = i < (mobile ? 8 : 18);
+      const r = large ? (7 + Math.random() * 5) : (6.2 + Math.pow(Math.random(), 0.65) * 11);
+      instA[i*4] = r;
+      instA[i*4+1] = Math.random() * 6.283;
+      instA[i*4+2] = (Math.random() - 0.5) * (large ? 1.4 : 0.35 + r * 0.06);
+      instA[i*4+3] = large ? (0.22 + Math.random() * 0.18) : (0.045 + Math.random() * 0.09);
+      instB[i*4] = 0.4 + Math.random() * 1.6;
+      instB[i*4+1] = (Math.random() - 0.5) * 0.9;
+      instB[i*4+2] = Math.random();
+      instB[i*4+3] = Math.random();
+    }
+    const prismPosBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, prismPosBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.pos, gl.STATIC_DRAW);
+    const prismNrmBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, prismNrmBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.nrm, gl.STATIC_DRAW);
+    const instABuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, instABuf);
+    gl.bufferData(gl.ARRAY_BUFFER, instA, gl.STATIC_DRAW);
+    const instBBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, instBBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, instB, gl.STATIC_DRAW);
+    const vaoPrism = gl.createVertexArray();
+    gl.bindVertexArray(vaoPrism);
+    gl.bindBuffer(gl.ARRAY_BUFFER, prismPosBuf);
+    gl.enableVertexAttribArray(progPrism.a.aPos);
+    gl.vertexAttribPointer(progPrism.a.aPos, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, prismNrmBuf);
+    gl.enableVertexAttribArray(progPrism.a.aNrm);
+    gl.vertexAttribPointer(progPrism.a.aNrm, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, instABuf);
+    gl.enableVertexAttribArray(progPrism.a.aInstA);
+    gl.vertexAttribPointer(progPrism.a.aInstA, 4, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(progPrism.a.aInstA, 1);
+    gl.bindBuffer(gl.ARRAY_BUFFER, instBBuf);
+    gl.enableVertexAttribArray(progPrism.a.aInstB);
+    gl.vertexAttribPointer(progPrism.a.aInstB, 4, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(progPrism.a.aInstB, 1);
+    gl.bindVertexArray(null);
+
+    const infalls = [];
+    const infallBuf = gl.createBuffer();
+    const vaoInfall = gl.createVertexArray();
+    gl.bindVertexArray(vaoInfall);
+    gl.bindBuffer(gl.ARRAY_BUFFER, infallBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(16 * 3), gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(progInfall.a.aPos);
+    gl.vertexAttribPointer(progInfall.a.aPos, 3, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+
+    function makeTarget(w, h, hdr) {
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      const intern = hdr && canHDR ? gl.RGBA16F : gl.RGBA8;
+      const type = hdr && canHDR ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE;
+      gl.texImage2D(gl.TEXTURE_2D, 0, intern, w, h, 0, gl.RGBA, type, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      const fbo = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      if (!ok) {
+        if (hdr) return makeTarget(w, h, false);
+        throw new Error("FBO failed");
+      }
+      return { tex, fbo, w, h };
+    }
+
+    let scene, bright, blurA, blurB, streak, rtW = 0, rtH = 0, bloomW = 0, bloomH = 0;
+    let steps = mobile ? 42 : 72;
+    const stepsTarget = steps;
+    let renderScale = mobile ? 0.52 : Math.min(1, 1400 / Math.max(innerWidth, 1));
+
+    function resizeRT() {
+      const dpr = Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2);
+      canvas.width = Math.max(2, Math.floor(innerWidth * dpr));
+      canvas.height = Math.max(2, Math.floor(innerHeight * dpr));
+      const w = Math.max(2, Math.floor(canvas.width * renderScale));
+      const h = Math.max(2, Math.floor(canvas.height * renderScale));
+      if (w === rtW && h === rtH) return;
+      rtW = w; rtH = h;
+      bloomW = Math.max(2, w >> 1);
+      bloomH = Math.max(2, h >> 1);
+      scene = makeTarget(w, h, true);
+      bright = makeTarget(bloomW, bloomH, true);
+      blurA = makeTarget(bloomW, bloomH, true);
+      blurB = makeTarget(bloomW, bloomH, true);
+      streak = makeTarget(bloomW, Math.max(2, bloomH >> 1), true);
+    }
+    resizeRT();
+    addEventListener("resize", () => { renderScale = mobile ? 0.52 : Math.min(1, 1400 / Math.max(innerWidth, 1)); resizeRT(); }, { passive: true });
+
+    function perspective(fov, aspect, near, far) {
+      const f = 1 / Math.tan(fov / 2);
+      const nf = 1 / (near - far);
+      return new Float32Array([
+        f / aspect, 0, 0, 0,
+        0, f, 0, 0,
+        0, 0, (far + near) * nf, -1,
+        0, 0, 2 * far * near * nf, 0
+      ]);
+    }
+    function lookAt(ex, ey, ez) {
+      let zx = ex, zy = ey, zz = ez;
+      let zl = 1 / Math.hypot(zx, zy, zz);
+      zx *= zl; zy *= zl; zz *= zl;
+      let xx = 0 * zz - 1 * zy, xy = 1 * zx - 0 * zz, xz = 0 * zy - 0 * zx;
+      if (Math.hypot(xx, xy, xz) < 1e-5) { xx = 1; xy = 0; xz = 0; }
+      let xl = 1 / Math.hypot(xx, xy, xz);
+      xx *= xl; xy *= xl; xz *= xl;
+      const yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
+      return new Float32Array([
+        xx, yx, zx, 0,
+        xy, yy, zy, 0,
+        xz, yz, zz, 0,
+        -(xx*ex + xy*ey + xz*ez),
+        -(yx*ex + yy*ey + yz*ez),
+        -(zx*ex + zy*ey + zz*ez), 1
+      ]);
+    }
+    function mul4(a, b) {
+      const o = new Float32Array(16);
+      for (let c = 0; c < 4; c++) {
+        for (let r = 0; r < 4; r++) {
+          o[c*4+r] = a[0*4+r]*b[c*4+0] + a[1*4+r]*b[c*4+1] + a[2*4+r]*b[c*4+2] + a[3*4+r]*b[c*4+3];
+        }
+      }
+      return o;
+    }
+    function basis(yaw, pitch, dist) {
+      const cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const cy = Math.cos(yaw), sy = Math.sin(yaw);
+      const x = dist * cy * cp, y = dist * sp, z = dist * sy * cp;
+      const pos = [x, y, z];
+      const fl = Math.hypot(x, y, z) || 1;
+      const fwd = [-x/fl, -y/fl, -z/fl];
+      let right = [fwd[1]*0 - fwd[2]*1, fwd[2]*0 - fwd[0]*0, fwd[0]*1 - fwd[1]*0];
+      let rl = Math.hypot(right[0], right[1], right[2]);
+      if (rl < 1e-5) right = [1, 0, 0];
+      else { right[0]/=rl; right[1]/=rl; right[2]/=rl; }
+      const up = [
+        right[1]*fwd[2] - right[2]*fwd[1],
+        right[2]*fwd[0] - right[0]*fwd[2],
+        right[0]*fwd[1] - right[1]*fwd[0]
+      ];
+      return { pos, fwd, right, up };
+    }
+
+    const cam = {
+      yaw: 0.55,
+      pitch: 0.38,
+      dist: reduced ? 16.4 : 34,
+      vy: 0, vp: 0, vd: 0,
+      auto: true
+    };
+    let down = false, lx = 0, ly = 0, pinch = 0;
+    let pulse = 8, pulseAmp = 0;
+    let mass = [8, 0, 0], massG = 0;
+    let pointer = { x: 0, y: 0 };
+    let exposure = reduced ? 1 : 0;
+
+    canvas.addEventListener("pointerdown", (e) => {
+      down = true;
+      cam.auto = false;
+      lx = e.clientX; ly = e.clientY;
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    addEventListener("pointerup", () => { down = false; });
+    addEventListener("pointermove", (e) => {
+      pointer.x = e.clientX; pointer.y = e.clientY;
+      if (!down) return;
+      cam.vy += (e.clientX - lx) * 0.0022;
+      cam.vp += (e.clientY - ly) * 0.0018;
+      lx = e.clientX; ly = e.clientY;
+    }, { passive: true });
+    canvas.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      cam.auto = false;
+      cam.vd += e.deltaY * 0.012;
+    }, { passive: false });
+    canvas.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 2) {
+        pinch = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    }, { passive: true });
+    canvas.addEventListener("touchmove", (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const d = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        cam.dist = Math.max(5.5, Math.min(42, cam.dist - (d - pinch) * 0.02));
+        pinch = d;
+      }
+    }, { passive: false });
+
+    function spawnInfall(hit) {
+      infalls.push({
+        r: Math.max(4.2, Math.hypot(hit[0], hit[2])),
+        a: Math.atan2(hit[2], hit[0]),
+        y: hit[1] * 0.15,
+        t: 0
+      });
+      if (infalls.length > 14) infalls.shift();
+    }
+
+    canvas.addEventListener("click", (e) => {
+      pulse = 3.4;
+      pulseAmp = 1;
+      const b = basis(cam.yaw, cam.pitch, cam.dist);
+      const uvx = (e.clientX / innerWidth) * 2 - 1;
+      const uvy = 1 - (e.clientY / innerHeight) * 2;
+      const aspect = innerWidth / innerHeight;
+      const fov = 0.52;
+      const rd = [
+        b.fwd[0] + b.right[0] * uvx * aspect * fov + b.up[0] * uvy * fov,
+        b.fwd[1] + b.right[1] * uvx * aspect * fov + b.up[1] * uvy * fov,
+        b.fwd[2] + b.right[2] * uvx * aspect * fov + b.up[2] * uvy * fov
+      ];
+      const rl = Math.hypot(rd[0], rd[1], rd[2]) || 1;
+      rd[0]/=rl; rd[1]/=rl; rd[2]/=rl;
+      let hit = [8, 0, 0];
+      if (Math.abs(rd[1]) > 1e-4) {
+        const t = -b.pos[1] / rd[1];
+        if (t > 0) hit = [b.pos[0] + rd[0]*t, 0, b.pos[2] + rd[2]*t];
+      }
+      mass = hit;
+      massG = 1.8;
+      spawnInfall(hit);
+      spawnInfall([hit[0]*0.92, 0, hit[2]*1.08]);
+      pingAudio();
+    });
+
+    let ac, analyser, masterGain, filterNode, waveData;
+    const auBtn = document.getElementById("au");
+    const waveEl = document.getElementById("wave");
+    waveEl.innerHTML = Array.from({ length: 22 }, () => "<i></i>").join("");
+    const waveBars = [...waveEl.querySelectorAll("i")];
+
+    function pingAudio() {
+      if (!ac) return;
+      const t = ac.currentTime;
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(220, t);
+      o.frequency.exponentialRampToValueAtTime(48, t + 0.7);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.12, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+      o.connect(g).connect(masterGain);
+      o.start(t); o.stop(t + 0.85);
+      const nlen = ac.sampleRate * 0.2;
+      const buf = ac.createBuffer(1, nlen, ac.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < nlen; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / nlen);
+      const src = ac.createBufferSource();
+      src.buffer = buf;
+      const bp = ac.createBiquadFilter();
+      bp.type = "bandpass"; bp.frequency.value = 900; bp.Q.value = 1.2;
+      const ng = ac.createGain(); ng.gain.value = 0.08;
+      src.connect(bp).connect(ng).connect(masterGain);
+      src.start();
+    }
+
+    auBtn.addEventListener("click", async () => {
+      if (!ac) {
+        ac = new AudioContext();
+        masterGain = ac.createGain();
+        masterGain.gain.value = 0;
+        analyser = ac.createAnalyser();
+        analyser.fftSize = 64;
+        masterGain.connect(analyser);
+        analyser.connect(ac.destination);
+        waveData = new Uint8Array(analyser.frequencyBinCount);
+
+        function osc(type, freq, gain, detune) {
+          const o = ac.createOscillator();
+          o.type = type; o.frequency.value = freq; if (detune) o.detune.value = detune;
+          const g = ac.createGain(); g.gain.value = gain;
+          o.connect(g).connect(masterGain);
+          o.start();
+          return o;
+        }
+        osc("sine", 36.71, 0.2);
+        osc("triangle", 73.42, 0.035, 6);
+        osc("sine", 110, 0.018, -4);
+        osc("sine", 329.63, 0.007);
+        osc("sine", 493.88, 0.004, 3);
+
+        const nlen = ac.sampleRate * 2;
+        const buf = ac.createBuffer(1, nlen, ac.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < nlen; i++) d[i] = Math.random() * 2 - 1;
+        const noise = ac.createBufferSource();
+        noise.buffer = buf; noise.loop = true;
+        filterNode = ac.createBiquadFilter();
+        filterNode.type = "bandpass";
+        filterNode.frequency.value = 380;
+        filterNode.Q.value = 5;
+        const ng = ac.createGain(); ng.gain.value = 0.03;
+        noise.connect(filterNode).connect(ng).connect(masterGain);
+        noise.start();
+        masterGain.gain.linearRampToValueAtTime(0.85, ac.currentTime + 2.4);
+      }
+      if (ac.state === "suspended") await ac.resume();
+      auBtn.textContent = "[ Audio // Online ]";
+    });
+
+    document.getElementById("pc").textContent = nP.toLocaleString();
+    document.getElementById("pr").textContent = String(nPrism);
+    if (mobile) {
+      document.getElementById("hint").textContent = "Drag to orbit · pinch to approach · tap to drop mass";
+    }
+
+    const t0 = performance.now();
+    let last = t0, frames = 0, fpsT = t0, fps = 60;
+    let proper = 0;
+
+    let glChecked = false;
+    function drawPass(prog, fbo, w, h, tex, unit) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.viewport(0, 0, w, h);
+      gl.useProgram(prog.p);
+      bindQuad(prog);
+      if (tex) {
+        gl.activeTexture(gl.TEXTURE0 + (unit || 0));
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.uniform1i(prog.u.uTex, unit || 0);
+      }
+    }
+
+    function loop(now) {
+      requestAnimationFrame(loop);
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      const t = (now - t0) / 1000;
+
+      if (!reduced) {
+        const k = Math.min(t / 3.8, 1);
+        const e = 1 - Math.pow(1 - k, 3);
+        if (t < 4.2) cam.dist += (16.4 - cam.dist) * (0.6 * dt + 0.015);
+        exposure = Math.min(1, Math.max(0, (t - 0.35) / 2.4));
+        if (t > 2.4) document.getElementById("hud").classList.add("on");
+        if (t > 2.1) document.getElementById("mark").classList.add("out");
+        if (t > 2.6) document.body.classList.add("live");
+      } else {
+        exposure = 1;
+        document.getElementById("hud").classList.add("on");
+        document.getElementById("mark").classList.add("out");
+        document.body.classList.add("live");
+      }
+
+      if (cam.auto && t > 3) cam.vy += 0.018 * dt;
+      cam.vy *= 0.9; cam.vp *= 0.9; cam.vd *= 0.86;
+      cam.yaw += cam.vy;
+      cam.pitch = Math.max(-1.15, Math.min(1.22, cam.pitch + cam.vp));
+      cam.dist = Math.max(5.4, Math.min(44, cam.dist + cam.vd * dt * 12));
+
+      pulse += dt * 2.15;
+      pulseAmp *= Math.pow(0.22, dt);
+      if (pulse > 16) pulse = 3.2;
+      massG *= Math.pow(0.15, dt);
+
+      const b = basis(cam.yaw, cam.pitch, cam.dist);
+      const aspect = rtW / rtH;
+      const fov = 0.55;
+      const P = perspective(2 * Math.atan(fov), aspect, 0.12, 80);
+      const V = lookAt(b.pos[0], b.pos[1], b.pos[2]);
+      const MVP = mul4(P, V);
+
+      const uvx = (pointer.x / innerWidth) * 2 - 1;
+      const uvy = 1 - (pointer.y / innerHeight) * 2;
+      const rd = [
+        b.fwd[0] + b.right[0] * uvx * aspect * fov + b.up[0] * uvy * fov,
+        b.fwd[1] + b.right[1] * uvx * aspect * fov + b.up[1] * uvy * fov,
+        b.fwd[2] + b.right[2] * uvx * aspect * fov + b.up[2] * uvy * fov
+      ];
+      const rdl = Math.hypot(rd[0], rd[1], rd[2]) || 1;
+      if (Math.abs(rd[1] / rdl) > 1e-4) {
+        const tt = -b.pos[1] / (rd[1] / rdl);
+        if (tt > 0 && massG < 0.05) {
+          mass = [b.pos[0] + (rd[0]/rdl)*tt, 0, b.pos[2] + (rd[2]/rdl)*tt];
+        }
+      }
+
+      for (let i = infalls.length - 1; i >= 0; i--) {
+        const s = infalls[i];
+        s.t += dt;
+        s.a += dt * (1.8 / (s.r + 0.3));
+        s.r -= dt * (0.85 + 2.2 / (s.r + 0.2));
+        s.y *= 0.99;
+        if (s.r < 1.15) {
+          pulse = 1.4; pulseAmp = Math.max(pulseAmp, 1.2);
+          infalls.splice(i, 1);
+          pingAudio();
+        }
+      }
+
+      const gtt = Math.sqrt(Math.max(0.02, 1 - 1 / cam.dist));
+      proper += dt * gtt;
+
+      gl.disable(gl.DEPTH_TEST);
+      gl.disable(gl.BLEND);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, scene.fbo);
+      gl.viewport(0, 0, scene.w, scene.h);
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.useProgram(progBH.p);
+      bindQuad(progBH);
+      gl.uniform2f(progBH.u.uRes, scene.w, scene.h);
+      gl.uniform3f(progBH.u.uCamPos, b.pos[0], b.pos[1], b.pos[2]);
+      gl.uniform3f(progBH.u.uCamFwd, b.fwd[0], b.fwd[1], b.fwd[2]);
+      gl.uniform3f(progBH.u.uCamRight, b.right[0], b.right[1], b.right[2]);
+      gl.uniform3f(progBH.u.uCamUp, b.up[0], b.up[1], b.up[2]);
+      gl.uniform1f(progBH.u.uTime, t);
+      gl.uniform1f(progBH.u.uFov, fov);
+      gl.uniform1f(progBH.u.uExposure, exposure);
+      gl.uniform1f(progBH.u.uPulse, pulse);
+      gl.uniform1f(progBH.u.uPulseAmp, pulseAmp);
+      gl.uniform1f(progBH.u.uSteps, steps);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE);
+      gl.useProgram(progPt.p);
+      gl.bindVertexArray(vaoPt);
+      gl.uniformMatrix4fv(progPt.u.uMVP, false, MVP);
+      gl.uniform1f(progPt.u.uTime, t);
+      gl.uniform1f(progPt.u.uPulse, pulse);
+      gl.uniform1f(progPt.u.uPulseAmp, pulseAmp);
+      gl.uniform3f(progPt.u.uMass, mass[0], mass[1], mass[2]);
+      gl.uniform1f(progPt.u.uMassG, massG);
+      gl.uniform1f(progPt.u.uPoint, Math.max(canvas.height / 900, 0.7));
+      gl.drawArrays(gl.POINTS, 0, nP);
+
+      if (infalls.length) {
+        const arr = new Float32Array(infalls.length * 3);
+        infalls.forEach((s, i) => {
+          arr[i*3] = Math.cos(s.a) * s.r;
+          arr[i*3+1] = s.y;
+          arr[i*3+2] = Math.sin(s.a) * s.r;
+        });
+        gl.useProgram(progInfall.p);
+        gl.bindVertexArray(vaoInfall);
+        gl.bindBuffer(gl.ARRAY_BUFFER, infallBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
+        gl.uniformMatrix4fv(progInfall.u.uMVP, false, MVP);
+        gl.uniform1f(progInfall.u.uPoint, Math.max(canvas.height / 800, 0.8));
+        gl.drawArrays(gl.POINTS, 0, infalls.length);
+      }
+
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.useProgram(progPrism.p);
+      gl.bindVertexArray(vaoPrism);
+      gl.uniformMatrix4fv(progPrism.u.uMVP, false, MVP);
+      gl.uniform1f(progPrism.u.uTime, t);
+      gl.uniform3f(progPrism.u.uCamPos, b.pos[0], b.pos[1], b.pos[2]);
+      gl.uniform1f(progPrism.u.uPulseAmp, pulseAmp);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, mesh.count, nPrism);
+      gl.disable(gl.DEPTH_TEST);
+      gl.disable(gl.BLEND);
+
+      drawPass(progBright, bright.fbo, bright.w, bright.h, scene.tex, 0);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      drawPass(progBlur, blurA.fbo, blurA.w, blurA.h, bright.tex, 0);
+      gl.uniform2f(progBlur.u.uDir, 1.2 / blurA.w, 0);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      drawPass(progBlur, blurB.fbo, blurB.w, blurB.h, blurA.tex, 0);
+      gl.uniform2f(progBlur.u.uDir, 0, 1.2 / blurB.h);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      drawPass(progBlur, blurA.fbo, blurA.w, blurA.h, blurB.tex, 0);
+      gl.uniform2f(progBlur.u.uDir, 2.4 / blurA.w, 0);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      drawPass(progBlur, blurB.fbo, blurB.w, blurB.h, blurA.tex, 0);
+      gl.uniform2f(progBlur.u.uDir, 0, 2.4 / blurB.h);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      drawPass(progBlur, streak.fbo, streak.w, streak.h, bright.tex, 0);
+      gl.uniform2f(progBlur.u.uDir, 5.5 / streak.w, 0);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.useProgram(progComp.p);
+      bindQuad(progComp);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, scene.tex);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, blurB.tex);
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, streak.tex);
+      gl.uniform1i(progComp.u.uScene, 0);
+      gl.uniform1i(progComp.u.uBloom, 1);
+      gl.uniform1i(progComp.u.uStreak, 2);
+      gl.uniform2f(progComp.u.uRes, canvas.width, canvas.height);
+      gl.uniform1f(progComp.u.uTime, t);
+      gl.uniform1f(progComp.u.uCA, 0.18 + pulseAmp * 0.35);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindVertexArray(null);
+
+      if (!glChecked) {
+        glChecked = true;
+        const err = gl.getError();
+        if (err) showFail("WebGL error " + err);
+      }
+
+      frames++;
+      if (now - fpsT > 650) {
+        fps = Math.round(frames * 1000 / (now - fpsT));
+        frames = 0; fpsT = now;
+        document.getElementById("fps").textContent = String(fps);
+        document.getElementById("st").textContent = String(steps);
+        document.getElementById("pu").textContent = pulseAmp.toFixed(2);
+        const mm = Math.floor(proper / 60);
+        const ss = Math.floor(proper % 60);
+        const cc = Math.floor((proper % 1) * 100);
+        document.getElementById("tau").innerHTML =
+          String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0") + ".<span>" + String(cc).padStart(2, "0") + "</span>";
+        document.getElementById("rad").textContent = cam.dist.toFixed(2) + " Rs";
+        const z = 1 / Math.sqrt(Math.max(0.05, 1 - 1 / cam.dist)) - 1;
+        document.getElementById("zed").textContent = z.toFixed(3);
+        if (fps < 36 && steps > 28) { steps -= 4; if (!mobile && renderScale > 0.45) { renderScale *= 0.92; resizeRT(); } }
+        else if (fps > 56 && steps < stepsTarget) steps += 2;
+        if (filterNode && ac) {
+          filterNode.frequency.value = 280 + pulseAmp * 420 + Math.sin(t * 0.35) * 40;
+        }
+      }
+      if (analyser && waveData) {
+        analyser.getByteFrequencyData(waveData);
+        waveBars.forEach((bar, i) => {
+          const v = waveData[i % waveData.length] / 255;
+          bar.style.height = (3 + v * 19) + "px";
+        });
+      } else {
+        waveBars.forEach((bar, i) => {
+          bar.style.height = (3 + (Math.sin(t * 2.2 + i * 0.45) * 0.5 + 0.5) * 10) + "px";
+        });
+      }
+    }
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
